@@ -3,6 +3,7 @@ from shopify_sync import models
 import shopify
 import logging
 
+
 shop_url = ("https://%s:%s@upcraft-club.myshopify.com/admin" %
             (settings.SHOPIFY_API_KEY, settings.SHOPIFY_PASSWORD,))
 shopify.ShopifyResource.set_site(shop_url)

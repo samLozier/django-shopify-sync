@@ -57,7 +57,7 @@ class ShopifyResourceManager(UserOwnedManager):
             instance = self.sync_one(user, shopify_resource)
             instances.append(instance)
         return instances
-    
+
     def sync_all(self, user, **kwargs):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
@@ -65,7 +65,7 @@ class ShopifyResourceManager(UserOwnedManager):
         """
         shopify_resources = self.fetch_all(user, **kwargs)
         return self.sync_many(user, shopify_resources)
-    
+
     def fetch_all(self, user, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
@@ -73,7 +73,7 @@ class ShopifyResourceManager(UserOwnedManager):
         with user.session:
             total_count = self.model.shopify_resource_class.count(**kwargs)
             current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
-                        
+
             while current_page <= total_pages:
                 kwargs['page'] = current_page
                 shopify_resources = self.model.shopify_resource_class.find(**kwargs)
@@ -168,7 +168,7 @@ class ShopifyResourceModel(UserOwnedModel):
         Get a list of field names to be excluded when copying directly from a Shopify resource model and building
         a defaults hash.
         """
-        return ['user'] + cls.get_related_field_names() + cls.get_child_fields().keys()
+        return ['user'] + cls.get_related_field_names() + list(cls.get_child_fields().keys())  # python 3
 
     @classmethod
     def get_parent_field_names(cls):
