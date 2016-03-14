@@ -123,6 +123,7 @@ class ShopifyResourceModel(UserOwnedModel):
     """
     Base class for local Model objects that are to be synchronised with Shopify.
     """
+    id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
 
     shopify_resource_class = None
     parent_field = None
