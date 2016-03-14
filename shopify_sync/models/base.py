@@ -3,7 +3,6 @@ import logging
 
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
-from owned_models.models import UserOwnedModel, UserOwnedManager
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
@@ -13,38 +12,45 @@ logger = logging.getLogger(__name__)
 
 def get_shopify_pagination(total_count):
     """
-    Get the appropriate pagination to use with Shopify's API given the total number of records.
+    Get the appropriate pagination to use with Shopify's API
+    given the total number of records.
     """
-    return 1, int(math.ceil(float(total_count) / float(SHOPIFY_API_PAGE_LIMIT))), SHOPIFY_API_PAGE_LIMIT
+    last_page = (int(math.ceil(float(total_count) /
+                 float(SHOPIFY_API_PAGE_LIMIT))))
+    return (1, last_page, SHOPIFY_API_PAGE_LIMIT,)
 
 
-class ShopifyResourceManager(UserOwnedManager):
+class ShopifyResourceManager(models.Manager):
     """
     Base class for managing Shopify resource models.
     """
 
-    def sync_one(self, user, shopify_resource):
+    def sync_one(self, shopify_resource):
         """
-        Given a Shopify resource object, synchronise it locally so that we have an up-to-date version in the local
+        Given a Shopify resource object, synchronise it locally
+        so that we have an up-to-date version in the local
         database. Returns the created or updated local model.
         """
         # Synchronise any related model field.
         for related_field_name in self.model.get_related_field_names():
             related_shopify_resource = getattr(shopify_resource, related_field_name)
             related_model = getattr(self.model, related_field_name).field.rel.to
-            related_model.objects.sync_one(user, related_shopify_resource)
+            related_model.objects.sync_one(related_shopify_resource)
 
         # Synchronise instance.
-        instance, created = self.update_or_create(user, id = shopify_resource.id, defaults = self.model.get_defaults(shopify_resource))
+        instance, created = self.update_or_create(
+            id=shopify_resource.id, defaults=self.model.get_defaults(shopify_resource)
+        )
 
         # Synchronise any child fields.
         for child_field, child_model in self.model.get_child_fields().items():
             child_shopify_resources = getattr(shopify_resource, child_field)
-            child_model.objects.sync_many(user, child_shopify_resources, parent_shopify_resource = shopify_resource)
+            child_model.objects.sync_many(child_shopify_resources,
+                                          parent_shopify_resource=shopify_resource)
 
         return instance
 
-    def sync_many(self, user, shopify_resources, parent_shopify_resource = None):
+    def sync_many(self, shopify_resources, parent_shopify_resource = None):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
@@ -54,34 +60,33 @@ class ShopifyResourceManager(UserOwnedManager):
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
-            instance = self.sync_one(user, shopify_resource)
+            instance = self.sync_one(shopify_resource)
             instances.append(instance)
         return instances
 
-    def sync_all(self, user, **kwargs):
+    def sync_all(self, **kwargs):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
         """
-        shopify_resources = self.fetch_all(user, **kwargs)
-        return self.sync_many(user, shopify_resources)
+        shopify_resources = self.fetch_all(**kwargs)
+        return self.sync_many(shopify_resources)
 
-    def fetch_all(self, user, **kwargs):
+    def fetch_all(self, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
         """
-        with user.session:
-            total_count = self.model.shopify_resource_class.count(**kwargs)
-            current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
+        total_count = self.model.shopify_resource_class.count(**kwargs)
+        current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
 
-            while current_page <= total_pages:
-                kwargs['page'] = current_page
-                shopify_resources = self.model.shopify_resource_class.find(**kwargs)
-                for shopify_resource in shopify_resources:
-                    yield shopify_resource
-                current_page += 1
+        while current_page <= total_pages:
+            kwargs['page'] = current_page
+            shopify_resources = self.model.shopify_resource_class.find(**kwargs)
+            for shopify_resource in shopify_resources:
+                yield shopify_resource
+            current_page += 1
 
-    def push_one(self, user, instance):
+    def push_one(self, instance):
         """
         Push a local model instance to Shopify, creating or updating in the process.
 
@@ -96,22 +101,25 @@ class ShopifyResourceManager(UserOwnedManager):
             shopify_resource = instance
 
         # Save the Shopify resource.
-        with user.session:
+        with session:
             if not shopify_resource.save():
-                message = '[User]: {0} [Shopify API Errors]: {1}'.format(user.id, ', '.join(shopify_resource.errors.full_messages()))
+                message = '[Shopify API Errors]: {0}'.format(
+                    ', '.join(shopify_resource.errors.full_messages())
+                )
                 logger.error(message)
                 raise Exception(message)
-        return self.sync_one(user, shopify_resource)
+        return self.sync_one(shopify_resource)
 
-    def push_many(self, user, instances):
+    def push_many(self, instances):
         """
-        Push a list of local model instances to Shopify, creating or updating in the process.
+        Push a list of local model instances to Shopify,
+        creating or updating in the process.
 
         Returns the list of locally synchronised models on success.
         """
         synchronised_instances = []
         for instance in instances:
-            synchronised_instance = self.push_one(user, instance)
+            synchronised_instance = self.push_one(instance)
             synchronised_instances.append(synchronised_instance)
         return synchronised_instances
 
@@ -119,7 +127,7 @@ class ShopifyResourceManager(UserOwnedManager):
         abstract = True
 
 
-class ShopifyResourceModel(UserOwnedModel):
+class ShopifyResourceModel(models.Model):
     """
     Base class for local Model objects that are to be synchronised with Shopify.
     """
@@ -169,7 +177,7 @@ class ShopifyResourceModel(UserOwnedModel):
         Get a list of field names to be excluded when copying directly from a Shopify resource model and building
         a defaults hash.
         """
-        return ['user'] + cls.get_related_field_names() + list(cls.get_child_fields().keys())  # python 3
+        return cls.get_related_field_names() + list(cls.get_child_fields().keys())  # python 3
 
     @classmethod
     def get_parent_field_names(cls):

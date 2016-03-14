@@ -2,8 +2,7 @@ from .models import SmartCollection
 from .models import CustomCollection
 from .models import Product
 from .models import Shop
-
-from django.contrib.auth import get_user_model
+from django.conf import settings
 
 
 def get_topic_model(topic, data):
@@ -33,16 +32,7 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     """
     Signal handler to process a received webhook.
     """
-        
-    # Check that we know which user is related to this incoming webhook.
-    # Assumes the USERNAME_FIELD on the user model is equivalent to the domain.
-    user_model = get_user_model()
-    try:
-        user = user_model.objects.get(**{
-            user_model.USERNAME_FIELD: domain 
-        })
-    except user_model.DoesNotExist:
-        return
+    session = shopify.ShopifyResource.set_site(settings.SHOPIFY_URL)
 
     # Get the model related to the incoming topic and data.
     model = get_topic_model(topic, data)
@@ -59,4 +49,4 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
 
     # Execute the desired action.
     if model_action == 'sync_one':
-        model.objects.sync_one(user, shopify_resource)
+        model.objects.sync_one(session, shopify_resource)

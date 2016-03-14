@@ -30,19 +30,19 @@ class Product(ShopifyDatedResourceModel):
 
     @property
     def images(self):
-        return Image.objects.filter(self.user, product_id = self.id)
+        return Image.objects.filter(product_id = self.id)
 
     @property
     def collects(self):
-        return Collect.objects.filter(self.user, product_id = self.id)
+        return Collect.objects.filter(product_id = self.id)
 
     @property
     def variants(self):
-        return Variant.objects.filter(self.user, product_id = self.id)
+        return Variant.objects.filter(product_id = self.id)
 
     @property
     def options(self):
-        return Option.objects.filter(self.user, product_id = self.id)
+        return Option.objects.filter(product_id = self.id)
 
     @property
     def price(self):
