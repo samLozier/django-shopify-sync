@@ -15,7 +15,7 @@ class Order(ShopifyDatedResourceModel):
     }
 
     billing_address = JSONField(dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
-    browser_ip = models.IPAddressField(null = True)
+    browser_ip = models.GenericIPAddressField(null = True)
     buyer_accepts_marketing = models.BooleanField(default = False)
     cancel_reason = models.CharField(max_length = 32, null = True)
     cancelled_at = models.DateTimeField(null = True)
