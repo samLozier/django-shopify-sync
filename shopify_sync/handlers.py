@@ -1,25 +1,26 @@
+import shopify
 from django.conf import settings
 
-from .models import CustomCollection, Product, Shop, SmartCollection
+from .models import (CustomCollection, Customer, Order, Product, Shop,
+                     SmartCollection)
 
 
 def get_topic_model(topic, data):
     """
-    Return the model related to the given topic, if it's a valid topic permitted by theme settings.
-    If the topic isn't permitted, or there's no rule mapping the given topic to a model, None is returned.
+    Return the model related to the given topic, if it's a valid topic
+    permitted by theme settings. If the topic isn't permitted, or there's
+    no rule mapping the given topic to a model, None is returned.
     """
-    if topic.startswith('collections/'):
-        if 'rules' in data:
-            return SmartCollection
-        return CustomCollection
+    topic = topic.split('/')[0]
+    mapping = {
+        'collections': SmartCollection if 'rules' in data else CustomCollection,
+        'products': Product,
+        'customers': Customer,
+        'orders': Order,
+        'shop': Shop,
+    }
 
-    if topic.startswith('products/'):
-        return Product
-
-    if topic.startswith('shop/'):
-        return Shop
-
-    return None
+    return mapping.get(topic, None)
 
 
 def get_topic_action(topic):
