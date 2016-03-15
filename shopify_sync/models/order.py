@@ -1,10 +1,12 @@
-from django.db import models
+from __future__ import unicode_literals
+
 import shopify
+from django.db import models
 from jsonfield import JSONField
 
+from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from .base import ShopifyDatedResourceModel
 from .line_item import LineItem
-from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 
 
 class Order(ShopifyDatedResourceModel):
@@ -65,5 +67,5 @@ class Order(ShopifyDatedResourceModel):
     def refund(self):
         return []
 
-    def __unicode__(self):
+    def __str__(self):
         return unicode(self.name)

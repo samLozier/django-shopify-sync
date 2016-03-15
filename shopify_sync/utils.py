@@ -1,8 +1,8 @@
-from django.conf import settings
-from shopify_sync import models
-import shopify
 import logging
 
+import shopify
+from django.conf import settings
+from shopify_sync import models
 
 shop_url = ("https://%s:%s@upcraft-club.myshopify.com/admin" %
             (settings.SHOPIFY_API_KEY, settings.SHOPIFY_PASSWORD,))

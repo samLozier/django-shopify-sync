@@ -1,8 +1,6 @@
-from .models import SmartCollection
-from .models import CustomCollection
-from .models import Product
-from .models import Shop
 from django.conf import settings
+
+from .models import CustomCollection, Product, Shop, SmartCollection
 
 
 def get_topic_model(topic, data):

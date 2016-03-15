@@ -1,11 +1,12 @@
-import math
-import logging
+from __future__ import unicode_literals
 
-from django.db import models
+import logging
+import math
+
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import models
 
 from .. import SHOPIFY_API_PAGE_LIMIT
-
 
 logger = logging.getLogger(__name__)
 

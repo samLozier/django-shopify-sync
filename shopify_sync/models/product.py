@@ -1,10 +1,13 @@
+from __future__ import unicode_literals
+
+import shopify
+from django.db import models
+
 from .base import ShopifyDatedResourceModel
 from .collect import Collect
 from .image import Image
-from .variant import Variant
 from .option import Option
-from django.db import models
-import shopify
+from .variant import Variant
 
 
 class Product(ShopifyDatedResourceModel):
@@ -58,5 +61,5 @@ class Product(ShopifyDatedResourceModel):
             max([variant.grams for variant in self.variants]),
         )
 
-    def __unicode__(self):
+    def __str__(self):
         return self.title

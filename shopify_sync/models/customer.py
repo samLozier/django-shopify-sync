@@ -1,8 +1,10 @@
-from django.db import models
-import shopify
+from __future__ import unicode_literals
 
-from .base import ShopifyDatedResourceModel
+import shopify
+from django.db import models
+
 from .address import Address
+from .base import ShopifyDatedResourceModel
 from .order import Order
 
 

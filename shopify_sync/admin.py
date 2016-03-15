@@ -1,22 +1,9 @@
 from django.contrib import admin
-from shopify_sync.models.__init__ import (
-    Address,
-    CarrierService,
-    Collect,
-    CustomCollection,
-    Customer,
-    Image,
-    LineItem,
-    Metafield,
-    Option,
-    Order,
-    Product,
-    ScriptTag,
-    Shop,
-    SmartCollection,
-    Variant,
-    Webhook
-)
+from shopify_sync.models.__init__ import (Address, CarrierService, Collect,
+                                          CustomCollection, Customer, Image,
+                                          LineItem, Metafield, Option, Order,
+                                          Product, ScriptTag, Shop,
+                                          SmartCollection, Variant, Webhook)
 
 admin.site.register(Address)
 admin.site.register(CarrierService)

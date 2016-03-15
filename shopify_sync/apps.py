@@ -1,7 +1,6 @@
 from django.apps import AppConfig
-
-from shopify_webhook.signals import webhook_received
 from shopify_sync.handlers import webhook_received_handler
+from shopify_webhook.signals import webhook_received
 
 
 class ShopifySyncConfig(AppConfig):

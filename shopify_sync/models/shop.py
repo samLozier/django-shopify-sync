@@ -1,6 +1,9 @@
-from .base import ShopifyResourceManager, ShopifyResourceModel
-from django.db import models
+from __future__ import unicode_literals
+
 import shopify
+from django.db import models
+
+from .base import ShopifyResourceManager, ShopifyResourceModel
 
 
 class ShopManager(ShopifyResourceManager):

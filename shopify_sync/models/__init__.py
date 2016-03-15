@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from .address import Address
 from .carrier_service import CarrierService
 from .collect import Collect

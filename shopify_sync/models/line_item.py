@@ -1,9 +1,11 @@
-from django.db import models
+from __future__ import unicode_literals
+
 import shopify
+from django.db import models
 from jsonfield import JSONField
 
-from .base import ShopifyResourceModel
 from ..encoders import ShopifyDjangoJSONEncoder, empty_list
+from .base import ShopifyResourceModel
 
 
 class LineItem(ShopifyResourceModel):

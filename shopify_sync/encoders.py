@@ -1,6 +1,5 @@
-from django.core.serializers.json import DjangoJSONEncoder
-
 import shopify
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 def empty_list():

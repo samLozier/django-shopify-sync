@@ -1,7 +1,5 @@
-from ..models import Product
-
 from . import SyncTestCase
-
+from ..models import Product
 from .recipes import UserRecipe
 
 

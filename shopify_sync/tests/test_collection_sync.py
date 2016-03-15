@@ -1,7 +1,5 @@
-from ..models import SmartCollection, CustomCollection
-
 from . import SyncTestCase
-
+from ..models import CustomCollection, SmartCollection
 from .recipes import UserRecipe
 
 

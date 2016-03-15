@@ -1,10 +1,12 @@
+from __future__ import unicode_literals
+
+import shopify
 from django.db import models
 from jsonfield import JSONField
-import shopify
 
+from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from .base import ShopifyResourceModel
 from .collect import Collect
-from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 
 
 class SmartCollection(ShopifyResourceModel):
