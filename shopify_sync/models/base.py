@@ -8,7 +8,7 @@ from django.db import models
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def get_shopify_pagination(total_count):
@@ -34,9 +34,14 @@ class ShopifyResourceManager(models.Manager):
         """
         # Synchronise any related model field.
         for related_field_name in self.model.get_related_field_names():
-            related_shopify_resource = getattr(shopify_resource, related_field_name)
-            related_model = getattr(self.model, related_field_name).field.rel.to
-            related_model.objects.sync_one(related_shopify_resource)
+            try:
+                related_shopify_resource = getattr(shopify_resource,
+                                                   related_field_name)
+            except AttributeError as err:
+                log.warning("Shopify object is missing '%s' related_field" % err)
+            else:
+                related_model = getattr(self.model, related_field_name).field.rel.to
+                related_model.objects.sync_one(related_shopify_resource)
 
         # Synchronise instance.
         instance, created = self.update_or_create(
@@ -107,7 +112,7 @@ class ShopifyResourceManager(models.Manager):
                 message = '[Shopify API Errors]: {0}'.format(
                     ', '.join(shopify_resource.errors.full_messages())
                 )
-                logger.error(message)
+                log.error(message)
                 raise Exception(message)
         return self.sync_one(shopify_resource)
 
