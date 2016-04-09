@@ -68,4 +68,4 @@ class Order(ShopifyDatedResourceModel):
         return []
 
     def __str__(self):
-        return unicode(self.name)
+        return self.name
