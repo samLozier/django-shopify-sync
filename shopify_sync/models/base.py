@@ -68,8 +68,13 @@ class ShopifyResourceManager(models.Manager):
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
-            instance = self.sync_one(shopify_resource)
-            instances.append(instance)
+            try:
+                instance = self.sync_one(shopify_resource)
+            except Exception as exc:
+                log.warning("shopify resource '%s' faled to sync for reason '%s'" % (str(shopify_resource), exc))
+                break
+            else:
+                instances.append(instance)
         return instances
 
     def sync_all(self, **kwargs):
