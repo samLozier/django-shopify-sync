@@ -33,6 +33,7 @@ class ShopifyResourceManager(models.Manager):
         database. Returns the created or updated local model.
         """
         # Synchronise any related model field.
+        log.debug("Syncing shopify resource '%s'" % str(shopify_resource))
         for related_field_name in self.model.get_related_field_names():
             try:
                 related_shopify_resource = getattr(shopify_resource,
@@ -41,6 +42,7 @@ class ShopifyResourceManager(models.Manager):
                 log.warning("Shopify object is missing '%s' related_field" % err)
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
+                log.debug(" -- related resource for '%s'" % str(shopify_resource))
                 related_model.objects.sync_one(related_shopify_resource)
 
         # Synchronise instance.
@@ -263,11 +265,12 @@ class ShopifyResourceModel(models.Model):
 
 class ShopifyDatedResourceModel(ShopifyResourceModel):
     """
-    Extends ShopifyResourceModel by adding two common fields for Shopify resources - `created_at` and `updated_at`.
+    Extends ShopifyResourceModel by adding two common fields for Shopify
+    resources - `created_at` and `updated_at`.
     """
 
-    created_at = models.DateTimeField()
-    updated_at = models.DateTimeField()
+    created_at = models.DateTimeField(null=True)
+    updated_at = models.DateTimeField(null=True)
 
     class Meta:
         abstract = True

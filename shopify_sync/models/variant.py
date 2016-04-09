@@ -16,7 +16,7 @@ class Variant(ShopifyDatedResourceModel):
     grams = models.IntegerField()
     inventory_management = models.CharField(max_length = 32, null = True, default = 'blank')
     inventory_policy = models.CharField(max_length = 32, null = True, default = 'deny')
-    inventory_quantity = models.IntegerField()
+    inventory_quantity = models.IntegerField(null=True)
     option1 = models.CharField(max_length = 255, null = True)
     option2 = models.CharField(max_length = 255, null = True)
     option3 = models.CharField(max_length = 255, null = True)
