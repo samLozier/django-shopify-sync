@@ -9,10 +9,10 @@ from .base import ShopifyDatedResourceModel
 class Collect(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Collect
 
-    collection_id = models.IntegerField()
+    collection_id = models.BigIntegerField()
     featured = models.BooleanField(default = False)
     position = models.IntegerField(null = True, default = 1)
-    product_id = models.IntegerField()
+    product_id = models.BigIntegerField()
     sort_value = models.CharField(max_length = 16, null = True)
 
     class Meta:

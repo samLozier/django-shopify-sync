@@ -18,7 +18,7 @@ class Customer(ShopifyDatedResourceModel):
     first_name = models.CharField(max_length = 64)
     multipass_identified = models.CharField(max_length = 64, null = True)
     last_name = models.CharField(max_length = 64)
-    last_order_id = models.IntegerField(null = True)
+    last_order_id = models.BigIntegerField(null = True)
     last_order_name = models.CharField(max_length = 32, null = True)
     note = models.TextField(null = True)
     orders_count = models.IntegerField()

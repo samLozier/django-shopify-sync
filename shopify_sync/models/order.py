@@ -36,7 +36,7 @@ class Order(ShopifyDatedResourceModel):
     note = models.TextField(null = True)
     note_attributes = JSONField(dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     number = models.IntegerField()
-    order_number = models.IntegerField()
+    order_number = models.BigIntegerField()
     processed_at = models.DateTimeField()
     processing_method = models.CharField(max_length = 32)
     referring_site = models.URLField(max_length = 2048, null = True)

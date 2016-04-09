@@ -26,7 +26,7 @@ class Metafield(ShopifyDatedResourceModel):
     description = models.CharField(max_length = 255)
     key = models.CharField(max_length = 30)
     namespace = models.CharField(max_length = 20)
-    owner_id = models.IntegerField()
+    owner_id = models.BigIntegerField()
     owner_resource = models.CharField(max_length = 32, choices = OWNER_RESOURCE_CHOICES, default = OWNER_RESOURCE_SHOP)
     value = models.TextField()
     value_type = models.CharField(max_length = 32, choices = VALUE_TYPE_CHOICES, default = VALUE_TYPE_STRING)
