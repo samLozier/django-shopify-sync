@@ -37,3 +37,6 @@ class Customer(ShopifyDatedResourceModel):
     @property
     def orders(self):
         return Order.objects.filter(self.user, customer = self)
+
+    def __str__(self):
+        return "%s %s" % (self.first_name or "", self.last_name or "",)

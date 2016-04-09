@@ -26,7 +26,7 @@ class Product(ShopifyDatedResourceModel):
     tags = models.CharField(max_length = 255, blank = True)
     template_suffix = models.CharField(max_length = 255, null = True)
     title = models.CharField(max_length = 255, db_index = True)
-    vendor = models.CharField(max_length = 255, db_index = True)
+    vendor = models.CharField(max_length=255, db_index=True, null=True)
 
     class Meta:
         app_label = 'shopify_sync'

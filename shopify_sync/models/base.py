@@ -39,7 +39,7 @@ class ShopifyResourceManager(models.Manager):
                 related_shopify_resource = getattr(shopify_resource,
                                                    related_field_name)
             except AttributeError as err:
-                log.warning("Shopify object is missing '%s' related_field" % err)
+                log.warning("Shopify object '%s' is missing '%s' related_field" % (str(shopify_resource), err))
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
                 log.debug(" -- related resource for '%s'" % str(shopify_resource))
@@ -71,8 +71,7 @@ class ShopifyResourceManager(models.Manager):
             try:
                 instance = self.sync_one(shopify_resource)
             except Exception as exc:
-                log.warning("shopify resource '%s' faled to sync for reason '%s'" % (str(shopify_resource), exc))
-                break
+                log.warning("shopify resource '%s' failed to sync for reason '%s'" % (str(shopify_resource), exc))
             else:
                 instances.append(instance)
         return instances
