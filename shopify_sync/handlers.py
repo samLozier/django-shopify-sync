@@ -45,7 +45,7 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
 
     # Convert the incoming data to the relevant Shopify resource.
     shopify_resource = model.shopify_resource_from_json(data)
-    log.warning(shopify_resource)
+    log.warning("adsfadf %s" % str`(shopify_resource))
 
     # Execute the desired action.
     if model_action == 'sync_one':
