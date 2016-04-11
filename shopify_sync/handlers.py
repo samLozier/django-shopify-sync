@@ -1,8 +1,9 @@
-import shopify
-from django.conf import settings
+import logging
 
 from .models import (CustomCollection, Customer, Order, Product, Shop,
                      SmartCollection)
+
+log = logging.getLogger(__name__)
 
 
 def get_topic_model(topic, data):
@@ -19,7 +20,7 @@ def get_topic_model(topic, data):
         'orders': Order,
         'shop': Shop,
     }
-
+    log.info("Topic from webhook %s" % topic)
     return mapping.get(topic, None)
 
 
@@ -31,21 +32,21 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     """
     Signal handler to process a received webhook.
     """
-    session = shopify.ShopifyResource.set_site(settings.SHOPIFY_URL)
 
     # Get the model related to the incoming topic and data.
     model = get_topic_model(topic, data)
     if model is None:
-        return
+        assert "topic model does not exist"
 
     # Get the action related to the incoming topic.
     model_action = get_topic_action(topic)
     if model_action is None:
-        return
+        assert "topic action does not exist"
 
     # Convert the incoming data to the relevant Shopify resource.
     shopify_resource = model.shopify_resource_from_json(data)
+    log.warning(shopify_resource)
 
     # Execute the desired action.
     if model_action == 'sync_one':
-        model.objects.sync_one(session, shopify_resource)
+        model.objects.sync_one(shopify_resource)

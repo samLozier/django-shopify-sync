@@ -32,7 +32,7 @@ class LineItem(ShopifyResourceModel):
     total_discount = models.DecimalField(max_digits = 10, decimal_places = 2)
     variant_id = models.BigIntegerField(null = True)
     variant_title = models.CharField(max_length = 256)
-    vendor = models.CharField(max_length = 64)
+    vendor = models.CharField(max_length=64, null=True)
 
     class Meta:
         app_label = 'shopify_sync'

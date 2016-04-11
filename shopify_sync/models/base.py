@@ -218,7 +218,8 @@ class ShopifyResourceModel(models.Model):
     @classmethod
     def shopify_resource_from_json(cls, json):
         """
-        Return an instance of the Shopify Resource model for this model, built recursively using the given JSON object.
+        Return an instance of the Shopify Resource model for this model,
+        built recursively using the given JSON object.
         """
         instance = cls.shopify_resource_class()
 
