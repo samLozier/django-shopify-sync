@@ -20,7 +20,6 @@ def get_topic_model(topic, data):
         'orders': Order,
         'shop': Shop,
     }
-    log.info("Topic from webhook %s" % topic)
     return mapping.get(topic, None)
 
 
@@ -44,8 +43,10 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
         assert "topic action does not exist"
 
     # Convert the incoming data to the relevant Shopify resource.
+
+    msg = "Creating model '%s' from webhook data" % model.__name__
+    log.info(msg)
     shopify_resource = model.shopify_resource_from_json(data)
-    log.warning("adsfadf %s" % str`(shopify_resource))
 
     # Execute the desired action.
     if model_action == 'sync_one':

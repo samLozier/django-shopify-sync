@@ -26,14 +26,17 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
-    def sync_one(self, shopify_resource):
+    def sync_one(self, shopify_resource, caller=None):
         """
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
         database. Returns the created or updated local model.
         """
         # Synchronise any related model field.
-        log.debug("Syncing shopify resource '%s'" % str(shopify_resource))
+        msg = "Syncing shopify resource '%s'" % str(shopify_resource)
+        if caller:
+            msg += " - called by parent resource '%s'" % str(caller)
+        log.debug(msg)
         for related_field_name in self.model.get_related_field_names():
             try:
                 related_shopify_resource = getattr(shopify_resource,
@@ -42,8 +45,8 @@ class ShopifyResourceManager(models.Manager):
                 log.warning("Shopify object '%s' is missing '%s' related_field" % (str(shopify_resource), err))
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
-                log.debug(" -- related resource for '%s'" % str(shopify_resource))
-                related_model.objects.sync_one(related_shopify_resource)
+                related_model.objects.sync_one(related_shopify_resource,
+                                               caller=shopify_resource)
 
         # Synchronise instance.
         instance, created = self.update_or_create(
@@ -58,7 +61,7 @@ class ShopifyResourceManager(models.Manager):
 
         return instance
 
-    def sync_many(self, shopify_resources, parent_shopify_resource = None):
+    def sync_many(self, shopify_resources, parent_shopify_resource=None):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
@@ -69,7 +72,7 @@ class ShopifyResourceManager(models.Manager):
             if self.model.parent_field is not None and parent_shopify_resource is not None:
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
             try:
-                instance = self.sync_one(shopify_resource)
+                instance = self.sync_one(shopify_resource, caller=parent_shopify_resource)
             except Exception as exc:
                 log.warning("shopify resource '%s' failed to sync for reason '%s'" % (str(shopify_resource), exc))
             else:
@@ -216,20 +219,29 @@ class ShopifyResourceModel(models.Model):
         return cls.child_fields
 
     @classmethod
+    def get_r_fields(cls):
+        return cls.r_fields
+
+    @classmethod
     def shopify_resource_from_json(cls, json):
         """
         Return an instance of the Shopify Resource model for this model,
         built recursively using the given JSON object.
         """
         instance = cls.shopify_resource_class()
+        log.info("Creating shopify reasource '%s'" % str(instance))
+        log.debug("Using the following json: %s" % json)
 
         # Recursively instantiate any child attributes.
         for child_field, child_model in cls.get_child_fields().items():
             if child_field in json:
                 json[child_field] = [child_model.shopify_resource_from_json(child_field_json) for child_field_json in json[child_field]]
-        for related_field in cls.get_related_fields():
-            if related_field in json:
-                print(related_field)
+
+        # Recursively instantiate any related attributes.
+        if hasattr(cls, 'r_fields'):
+            for r_field, r_model in cls.get_r_fields().items():
+                if r_field in json:
+                    json[r_field] = r_model.shopify_resource_from_json(json[r_field])
 
         instance.attributes = json
         return instance
@@ -256,7 +268,7 @@ class ShopifyResourceModel(models.Model):
 
         # Recursively instantiate any child attributes.
         for child_field, child_model in self.get_child_fields().items():
-            if hasattr(self, child_field):
+            if hasattr(self, child_fÛAield):
                 setattr(instance, child_field, [child.to_shopify_resource() for child in getattr(self, child_field)])
 
         return instance

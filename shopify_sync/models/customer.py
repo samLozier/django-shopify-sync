@@ -5,7 +5,6 @@ from django.db import models
 
 from .address import Address
 from .base import ShopifyDatedResourceModel
-from .order import Order
 
 
 class Customer(ShopifyDatedResourceModel):
@@ -36,6 +35,7 @@ class Customer(ShopifyDatedResourceModel):
 
     @property
     def orders(self):
+        from .order import Order
         return Order.objects.filter(self.user, customer = self)
 
     def __str__(self):

@@ -7,11 +7,15 @@ from jsonfield import JSONField
 from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from .base import ShopifyDatedResourceModel
 from .line_item import LineItem
+from .customer import Customer
 
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
     related_fields = ['customer']
+    r_fields = {
+        'customer': Customer,
+    }
     child_fields = {
         'line_items': LineItem,
     }
