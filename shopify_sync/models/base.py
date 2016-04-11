@@ -227,6 +227,9 @@ class ShopifyResourceModel(models.Model):
         for child_field, child_model in cls.get_child_fields().items():
             if child_field in json:
                 json[child_field] = [child_model.shopify_resource_from_json(child_field_json) for child_field_json in json[child_field]]
+        for related_field in cls.get_related_fields():
+            if related_field in json:
+                print(related_field)
 
         instance.attributes = json
         return instance
