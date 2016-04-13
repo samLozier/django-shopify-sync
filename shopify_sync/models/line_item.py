@@ -36,3 +36,6 @@ class LineItem(ShopifyResourceModel):
 
     class Meta:
         app_label = 'shopify_sync'
+
+    def __str__(self):
+        return self.name

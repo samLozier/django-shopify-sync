@@ -59,17 +59,17 @@ class Order(ShopifyDatedResourceModel):
     class Meta:
         app_label = 'shopify_sync'
 
-    @property
-    def fulfillments(self):
+    def _fulfillments(self):
         return []
+    fulfillments = property(_fulfillments)
 
-    @property
-    def line_items(self):
-        return LineItem.objects.filter(self.user, order = self)
+    def _line_items(self):
+        return LineItem.objects.filter(order=self)
+    line_items = property(_line_items)
 
-    @property
-    def refund(self):
+    def _refund(self):
         return []
+    refund = property(_refund)
 
     def __str__(self):
         return self.name

@@ -116,13 +116,12 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = instance
 
         # Save the Shopify resource.
-        with session:
-            if not shopify_resource.save():
-                message = '[Shopify API Errors]: {0}'.format(
-                    ', '.join(shopify_resource.errors.full_messages())
-                )
-                log.error(message)
-                raise Exception(message)
+        if not shopify_resource.save():
+            message = '[Shopify API Errors]: {0}'.format(
+                ', '.join(shopify_resource.errors.full_messages())
+            )
+            log.error(message)
+            raise Exception(message)
         return self.sync_one(shopify_resource)
 
     def push_many(self, instances):
@@ -268,7 +267,7 @@ class ShopifyResourceModel(models.Model):
 
         # Recursively instantiate any child attributes.
         for child_field, child_model in self.get_child_fields().items():
-            if hasattr(self, child_fÛAield):
+            if hasattr(self, child_field):
                 setattr(instance, child_field, [child.to_shopify_resource() for child in getattr(self, child_field)])
 
         return instance

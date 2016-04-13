@@ -5,6 +5,12 @@ from shopify_sync.models.__init__ import (Address, CarrierService, Collect,
                                           Product, ScriptTag, Shop,
                                           SmartCollection, Variant, Webhook)
 
+
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('name', 'total_price', 'referring_site',)
+    readonly_fields = ('line_items',)
+
+
 admin.site.register(Address)
 admin.site.register(CarrierService)
 admin.site.register(Collect)
@@ -14,7 +20,7 @@ admin.site.register(Image)
 admin.site.register(LineItem)
 admin.site.register(Metafield)
 admin.site.register(Option)
-admin.site.register(Order)
+admin.site.register(Order, OrderAdmin)
 admin.site.register(Product)
 admin.site.register(ScriptTag)
 admin.site.register(Shop)
