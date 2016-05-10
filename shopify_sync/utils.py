@@ -4,8 +4,10 @@ import shopify
 from django.conf import settings
 from shopify_sync import models
 
-shop_url = ("https://%s:%s@upcraft-club.myshopify.com/admin" %
-            (settings.SHOPIFY_API_KEY, settings.SHOPIFY_PASSWORD,))
+shop_url = ("https://%s:%s@%s.myshopify.com/admin" %
+            (settings.SHOPIFY_API_KEY,
+             settings.SHOPIFY_PASSWORD,
+             settings.SHOP_NAME, ))
 shopify.ShopifyResource.set_site(shop_url)
 log = logging.getLogger(__name__)
 
