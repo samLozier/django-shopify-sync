@@ -8,13 +8,16 @@ from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from .base import ShopifyDatedResourceModel
 from .line_item import LineItem
 from .customer import Customer
+from .address import ShippingAddress
+
 
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
-    related_fields = ['customer']
+    related_fields = ['customer', 'shipping_address']
     r_fields = {
         'customer': Customer,
+        'shipping_address': ShippingAddress,
     }
     child_fields = {
         'line_items': LineItem,
@@ -44,7 +47,7 @@ class Order(ShopifyDatedResourceModel):
     processed_at = models.DateTimeField()
     processing_method = models.CharField(max_length = 32)
     referring_site = models.URLField(max_length = 2048, null = True)
-    shipping_address = JSONField(null = True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    shipping_address = models.ForeignKey('shopify_sync.ShippingAddress', null=True, related_name='shipping_address')
     shipping_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     source_name = models.CharField(max_length = 32)
     tax_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})

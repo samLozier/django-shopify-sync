@@ -1,12 +1,12 @@
 import logging
 
-from .models import (CustomCollection, Customer, Order, Product, Shop,
-                     SmartCollection)
-
 log = logging.getLogger(__name__)
 
 
 def get_topic_model(topic, data):
+    from .models import (CustomCollection, Customer, Order, Product, Shop,
+                         SmartCollection)
+
     """
     Return the model related to the given topic, if it's a valid topic
     permitted by theme settings. If the topic isn't permitted, or there's

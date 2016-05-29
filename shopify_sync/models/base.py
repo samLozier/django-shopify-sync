@@ -41,7 +41,7 @@ class ShopifyResourceManager(models.Manager):
             try:
                 related_shopify_resource = getattr(shopify_resource,
                                                    related_field_name)
-            except AttributeError as err:
+            except NotImplementedError as err:
                 log.warning("Shopify object '%s' is missing '%s' related_field" % (str(shopify_resource), err))
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
@@ -58,6 +58,8 @@ class ShopifyResourceManager(models.Manager):
             child_shopify_resources = getattr(shopify_resource, child_field)
             child_model.objects.sync_many(child_shopify_resources,
                                           parent_shopify_resource=shopify_resource)
+        _new =  "Created" if created else "Updated"
+        log.debug("%s <%s>" % (_new, instance))
 
         return instance
 
@@ -73,7 +75,7 @@ class ShopifyResourceManager(models.Manager):
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
             try:
                 instance = self.sync_one(shopify_resource, caller=parent_shopify_resource)
-            except Exception as exc:
+            except NotImplementedError as exc:
                 log.warning("shopify resource '%s' failed to sync for reason '%s'" % (str(shopify_resource), exc))
             else:
                 instances.append(instance)
@@ -141,11 +143,10 @@ class ShopifyResourceManager(models.Manager):
         abstract = True
 
 
-class ShopifyResourceModel(models.Model):
+class ShopifyResourceModelBase(models.Model):
     """
     Base class for local Model objects that are to be synchronised with Shopify.
     """
-    id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
 
     shopify_resource_class = None
     parent_field = None
@@ -277,6 +278,13 @@ class ShopifyResourceModel(models.Model):
         Convert this ShopifyResource model instance to a "JSON" (simple Python) object.
         """
         return self.to_shopify_resource().attributes
+
+    class Meta:
+        abstract = True
+
+
+class ShopifyResourceModel(ShopifyResourceModelBase):
+    id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
 
     class Meta:
         abstract = True
