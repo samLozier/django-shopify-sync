@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import shopify
+import logging
 from django.db import models
 
 from .base import ShopifyDatedResourceModel
@@ -8,6 +9,9 @@ from .collect import Collect
 from .image import Image
 from .option import Option
 from .variant import Variant
+from .metafield import Metafield
+
+log = logging.getLogger(__name__)
 
 
 class Product(ShopifyDatedResourceModel):
@@ -16,6 +20,7 @@ class Product(ShopifyDatedResourceModel):
         'images': Image,
         'variants': Variant,
         'options': Option,
+        #'metafields': Metafield,
     }
 
     body_html = models.TextField()
@@ -60,6 +65,19 @@ class Product(ShopifyDatedResourceModel):
             min([variant.grams for variant in self.variants]),
             max([variant.grams for variant in self.variants]),
         )
+
+    def save(self, *args, **kwargs):
+        shopify_resource = self.to_shopify_resource()
+        metafields = shopify_resource.metafields()
+        print(metafields)
+        for metafield in metafields:
+            defaults = metafield.attributes
+            defaults['product'] = self
+            instance, created = Metafield.objects.update_or_create(id=defaults['id'],
+                                                                   defaults=defaults)
+            _new =  "Created" if created else "Updated"
+            log.debug("%s <%s>" % (_new, instance))
+        super(Product, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.title

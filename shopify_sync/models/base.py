@@ -55,9 +55,10 @@ class ShopifyResourceManager(models.Manager):
 
         # Synchronise any child fields.
         for child_field, child_model in self.model.get_child_fields().items():
-            child_shopify_resources = getattr(shopify_resource, child_field)
-            child_model.objects.sync_many(child_shopify_resources,
-                                          parent_shopify_resource=shopify_resource)
+            if hasattr(shopify_resource, child_field):
+                child_shopify_resources = getattr(shopify_resource, child_field)
+                child_model.objects.sync_many(child_shopify_resources,
+                                              parent_shopify_resource=shopify_resource)
         _new =  "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
@@ -69,6 +70,7 @@ class ShopifyResourceManager(models.Manager):
         in the local database, Returns an array of the created or updated local models.
         """
         instances = []
+        print('reasources', shopify_resources)
         for shopify_resource in shopify_resources:
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
@@ -174,7 +176,6 @@ class ShopifyResourceModelBase(models.Model):
         for related_field in cls.get_related_field_names():
             if hasattr(shopify_resource, related_field):
                 defaults[related_field + '_id'] = getattr(getattr(shopify_resource, related_field), 'id')
-
         return defaults
 
     @classmethod
@@ -184,7 +185,9 @@ class ShopifyResourceModelBase(models.Model):
         defaults hash.
         """
         default_fields_excluded = cls.get_default_fields_excluded()
-        return cls.get_parent_field_names() + [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
+        fields = cls.get_parent_field_names()
+        fields += [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
+        return fields
 
     @classmethod
     def get_default_fields_excluded(cls):
