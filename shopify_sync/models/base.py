@@ -55,9 +55,10 @@ class ShopifyResourceManager(models.Manager):
 
         # Synchronise any child fields.
         for child_field, child_model in self.model.get_child_fields().items():
-            child_shopify_resources = getattr(shopify_resource, child_field)
-            child_model.objects.sync_many(child_shopify_resources,
-                                          parent_shopify_resource=shopify_resource)
+            if hasattr(shopify_resource, child_field):
+                child_shopify_resources = getattr(shopify_resource, child_field)
+                child_model.objects.sync_many(child_shopify_resources,
+                                              parent_shopify_resource=shopify_resource)
         _new =  "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
@@ -157,6 +158,14 @@ class ShopifyResourceModelBase(models.Model):
 
     json_encoder = DjangoJSONEncoder()
 
+    @property
+    def klass(self):
+        return self.__class__
+
+    @property
+    def manager(self):
+        return self.klass.objects
+
     @classmethod
     def get_defaults(cls, shopify_resource):
         """
@@ -174,7 +183,6 @@ class ShopifyResourceModelBase(models.Model):
         for related_field in cls.get_related_field_names():
             if hasattr(shopify_resource, related_field):
                 defaults[related_field + '_id'] = getattr(getattr(shopify_resource, related_field), 'id')
-
         return defaults
 
     @classmethod
@@ -184,7 +192,9 @@ class ShopifyResourceModelBase(models.Model):
         defaults hash.
         """
         default_fields_excluded = cls.get_default_fields_excluded()
-        return cls.get_parent_field_names() + [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
+        fields = cls.get_parent_field_names()
+        fields += [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
+        return fields
 
     @classmethod
     def get_default_fields_excluded(cls):
@@ -278,6 +288,16 @@ class ShopifyResourceModelBase(models.Model):
         Convert this ShopifyResource model instance to a "JSON" (simple Python) object.
         """
         return self.to_shopify_resource().attributes
+
+    def sync(self):
+        shopify_resource = self.to_shopify_resource()
+        shopify_resource.reload()
+        self.manager.sync_one(shopify_resource)
+
+    def save(self, push=False, *args, **kwargs):
+        super(ShopifyResourceModelBase, self).save(*args, **kwargs)
+        if push:
+            self.manager.push_one(self)
 
     class Meta:
         abstract = True
