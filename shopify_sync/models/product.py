@@ -67,7 +67,6 @@ class Product(ShopifyDatedResourceModel):
         )
 
     def save(self, *args, **kwargs):
-        """
         shopify_resource = self.to_shopify_resource()
         metafields = shopify_resource.metafields()
         print(metafields)
@@ -78,7 +77,6 @@ class Product(ShopifyDatedResourceModel):
                                                                    defaults=defaults)
             _new =  "Created" if created else "Updated"
             log.debug("%s <%s>" % (_new, instance))
-        """
         super(Product, self).save(*args, **kwargs)
 
     def __str__(self):

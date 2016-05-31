@@ -70,6 +70,7 @@ class ShopifyResourceManager(models.Manager):
         in the local database, Returns an array of the created or updated local models.
         """
         instances = []
+        print('reasources', shopify_resources)
         for shopify_resource in shopify_resources:
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
