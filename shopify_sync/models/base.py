@@ -8,6 +8,8 @@ from django.db import models
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
+from django.conf import settings
+
 log = logging.getLogger(__name__)
 
 
@@ -26,6 +28,14 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
+    def set_session(self, shopify_resource):
+        # This is odd. This was not built for private apps so we need to set
+        # do `shopify.ShopifyResource.set_site(shop_url)` and we access the
+        # ShopifyResource by going through its class. then we are able to be
+        # sure that it is set on the resource currently and not globaly
+        if hasattr(settings, 'SHOPIFY_PRIVATE_APP') and settings.SHOPIFY_PRIVATE_APP:
+            shopify_resource.__class__.__bases__[0].set_site(settings.SHOP_URL)
+
     def sync_one(self, shopify_resource, caller=None):
         """
         Given a Shopify resource object, synchronise it locally
@@ -33,6 +43,7 @@ class ShopifyResourceManager(models.Manager):
         database. Returns the created or updated local model.
         """
         # Synchronise any related model field.
+        self.set_session(shopify_resource)
         msg = "Syncing shopify resource '%s'" % str(shopify_resource)
         if caller:
             msg += " - called by parent resource '%s'" % str(caller)
