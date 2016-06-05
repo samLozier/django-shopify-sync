@@ -69,7 +69,6 @@ class Product(ShopifyDatedResourceModel):
     def save(self, *args, **kwargs):
         shopify_resource = self.to_shopify_resource()
         metafields = shopify_resource.metafields()
-        print(metafields)
         for metafield in metafields:
             defaults = metafield.attributes
             defaults['product'] = self

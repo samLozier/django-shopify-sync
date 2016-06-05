@@ -35,3 +35,6 @@ class Metafield(ShopifyDatedResourceModel):
 
     class Meta:
         app_label = 'shopify_sync'
+
+    def __str__(self):
+        return "%s=%s for %s" % (self.key, self.value, self.product,)

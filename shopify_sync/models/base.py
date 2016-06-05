@@ -81,7 +81,6 @@ class ShopifyResourceManager(models.Manager):
         in the local database, Returns an array of the created or updated local models.
         """
         instances = []
-        print('reasources', shopify_resources)
         for shopify_resource in shopify_resources:
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
@@ -129,6 +128,7 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = instance.to_shopify_resource()
         else:
             shopify_resource = instance
+        self.set_session(shopify_resource)
 
         # Save the Shopify resource.
         if not shopify_resource.save():
@@ -307,9 +307,12 @@ class ShopifyResourceModelBase(models.Model):
         self.manager.sync_one(shopify_resource)
 
     def save(self, push=False, *args, **kwargs):
-        super(ShopifyResourceModelBase, self).save(*args, **kwargs)
         if push:
-            self.manager.push_one(self)
+            log.info("Pushing %s to store" % self)
+            self = self.manager.push_one(self)
+            # have to save so that we can get the id if it is new
+            super(ShopifyResourceModelBase, self).save(*args, **kwargs)
+        super(ShopifyResourceModelBase, self).save(*args, **kwargs)
 
     class Meta:
         abstract = True
