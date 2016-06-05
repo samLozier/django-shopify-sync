@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 
 def get_topic_model(topic, data):
     from .models import (CustomCollection, Customer, Order, Product, Shop,
-                         SmartCollection)
+                         SmartCollection, Metafield)
 
     """
     Return the model related to the given topic, if it's a valid topic
@@ -18,6 +18,7 @@ def get_topic_model(topic, data):
         'products': Product,
         'customers': Customer,
         'orders': Order,
+        'metafields': Metafield,
         'shop': Shop,
     }
     return mapping.get(topic, None)
