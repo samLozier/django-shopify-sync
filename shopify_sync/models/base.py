@@ -274,6 +274,8 @@ class ShopifyResourceModelBase(models.Model):
         """
         instance = self.shopify_resource_class()
 
+        self.manager.set_session(instance)
+
         # Copy across attributes.
         for default_field in self.get_default_fields():
             if hasattr(self, default_field):
