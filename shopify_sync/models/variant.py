@@ -30,3 +30,6 @@ class Variant(ShopifyDatedResourceModel):
 
     class Meta:
         app_label = 'shopify_sync'
+
+    def __str__(self):
+        return "%s - %s" % (self.product, self.title)
