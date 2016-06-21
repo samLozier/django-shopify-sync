@@ -29,7 +29,7 @@ class Order(ShopifyDatedResourceModel):
     cancel_reason = models.CharField(max_length = 32, null = True)
     cancelled_at = models.DateTimeField(null = True)
     cart_token = models.CharField(max_length = 32, null = True)
-    client_details = JSONField(dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    client_details = JSONField(dump_kwargs = {'cls': ShopifyDjangoJSONEncoder}, null=True)
     closed_at = models.DateTimeField(null = True)
     currency = models.CharField(max_length = 3)
     customer = models.ForeignKey('shopify_sync.Customer', null=True)
