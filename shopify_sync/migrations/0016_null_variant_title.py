@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0014_auto_20160622_1547'),
+        ('shopify_sync', '0015_add_session'),
     ]
 
     operations = [

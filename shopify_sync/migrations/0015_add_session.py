@@ -6,21 +6,20 @@ from django.db import migrations, models
 import django.db.models.deletion
 
 
+def make_session(apps, schema_editor):
+    Session = apps.get_model('shopify_sync', 'Session')
+    session = Session.objects.get_or_create(id=1, defaults={'site': '',
+                                                            'token': ''})
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0013_auto_20160621_2202'),
+        ('shopify_sync', '0014_make_session'),
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='Session',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('token', models.CharField(max_length=255)),
-                ('site', models.CharField(max_length=511)),
-            ],
-        ),
+        migrations.RunPython(make_session),
         migrations.AddField(
             model_name='carrierservice',
             name='session',
