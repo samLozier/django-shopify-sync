@@ -29,7 +29,7 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
-    def sync_one(self, shopify_resource, caller=None):
+    def sync_one(self, shopify_resource, caller=None, session=None):
         """
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
@@ -39,6 +39,19 @@ class ShopifyResourceManager(models.Manager):
         msg = "Syncing shopify resource '%s'" % str(shopify_resource)
         if caller:
             msg += " - called by parent resource '%s'" % str(caller)
+            # this means that we can pull the session from the parent
+            session = session
+        else:
+            # get the session info from the header of the resource
+            token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
+            site = shopify_resource.__class__.site
+            # This will clean the url of the prefix and return a tuple
+            site = shopify_resource.__class__.connection._parse_site(site)
+            site = site[0].replace('https://', '')
+            session, _ = Session.objects.update_or_create(site=site,
+                                                          defaults={'token': token})
+            if _:
+                log.info("Created new session '%s'" % session)
         log.debug(msg)
         for related_field_name in self.model.get_related_field_names():
             try:
@@ -49,21 +62,10 @@ class ShopifyResourceManager(models.Manager):
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
                 related_model.objects.sync_one(related_shopify_resource,
-                                               caller=shopify_resource)
+                                               caller=shopify_resource,
+                                               session=session)
 
-        # get the session info from the header of the resource
-        token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
-        site = shopify_resource.__class__.site
-        # This will clean the url of the prefix and return a tuple
-        site = shopify_resource.__class__.connection._parse_site(site)
-        site = site[0].replace('https://', '')
-        session, _ = Session.objects.get_or_create(site=site,
-                                                   defaults={'token': token})
-        if _:
-            log.info("Created new session '%s'" % session)
-        # add it to the defaults
         defaults = self.model.get_defaults(shopify_resource)
-        defaults.update({'session': session})
 
         # Synchronise instance.
         instance, created = self.update_or_create(
@@ -108,16 +110,28 @@ class ShopifyResourceManager(models.Manager):
         shopify_resources = self.fetch_all(**kwargs)
         return self.sync_many(shopify_resources)
 
-    def fetch_all(self, **kwargs):
+    def fetch_all(self, session_id=None, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
         """
-        total_count = self.model.shopify_resource_class.count(**kwargs)
+        import shopify
+        # need to make sure that we get a session to use
+        if not session_id:
+            session = Session.objects.first()
+        else:
+            session = Session.objects.get(id=session_id)
+        # Get the class and make sure we have a session that we can use
+        shopify_resource_class = self.model.shopify_resource_class
+        shopify_session = shopify.Session(session.site, session.token)
+        # And now we activate the session on the class
+        shopify_resource_class.activate_session(shopify_session)
+        # And we can continue as normal now that we have a session
+        total_count = shopify_resource_class.count(**kwargs)
         current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
 
         while current_page <= total_pages:
             kwargs['page'] = current_page
-            shopify_resources = self.model.shopify_resource_class.find(**kwargs)
+            shopify_resources = shopify_resource_class.find(**kwargs)
             for shopify_resource in shopify_resources:
                 yield shopify_resource
             current_page += 1
@@ -170,7 +184,6 @@ class ShopifyResourceModelBase(models.Model):
     shopify_resource_class = None
     parent_field = None
     related_fields = []
-    exclude_fields = ['session']
     child_fields = {}
 
     objects = ShopifyResourceManager()
@@ -222,11 +235,7 @@ class ShopifyResourceModelBase(models.Model):
         a defaults hash.
         """
         return (cls.get_related_field_names() +
-                list(cls.get_child_fields().keys()) +  # python 3
-                # I am not sure if this can be removed. that is, we might not
-                # need to add it to the defaults later and just keep it here I
-                # know that there was an issue at one time. But we stable.
-                cls.exclude_fields)  # for the added session field
+                list(cls.get_child_fields().keys()))  # python 3
 
     @classmethod
     def get_parent_field_names(cls):

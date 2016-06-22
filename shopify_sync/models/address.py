@@ -42,6 +42,7 @@ class Address(AddressBase):
 
 
 class ShippingAddress(AddressBase):
+    exclude_fields = ['session']
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     class Meta:
