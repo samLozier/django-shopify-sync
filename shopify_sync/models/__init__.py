@@ -12,6 +12,7 @@ from .option import Option
 from .order import Order
 from .product import Product
 from .script_tag import ScriptTag
+from .session import Session
 from .shop import Shop
 from .smart_collection import SmartCollection
 from .variant import Variant

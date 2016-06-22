@@ -2,7 +2,7 @@ from django.contrib import admin
 from shopify_sync.models.__init__ import (Address, CarrierService, Collect,
                                           CustomCollection, Customer, Image,
                                           LineItem, Metafield, Option, Order,
-                                          Product, ScriptTag, Shop,
+                                          Product, ScriptTag, Session, Shop,
                                           SmartCollection, Variant, Webhook)
 
 
@@ -23,6 +23,7 @@ admin.site.register(Option)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Product)
 admin.site.register(ScriptTag)
+admin.site.register(Session)
 admin.site.register(Shop)
 admin.site.register(SmartCollection)
 admin.site.register(Variant)

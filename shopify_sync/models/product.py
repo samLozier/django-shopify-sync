@@ -20,7 +20,7 @@ class Product(ShopifyDatedResourceModel):
         'images': Image,
         'variants': Variant,
         'options': Option,
-        #'metafields': Metafield,
+        # 'metafields': Metafield,
     }
 
     body_html = models.TextField()
@@ -71,10 +71,10 @@ class Product(ShopifyDatedResourceModel):
         metafields = shopify_resource.metafields()
         for metafield in metafields:
             defaults = metafield.attributes
-            defaults['product'] = self
+            defaults.update({'product': self, 'session': self.session})
             instance, created = Metafield.objects.update_or_create(id=defaults['id'],
                                                                    defaults=defaults)
-            _new =  "Created" if created else "Updated"
+            _new = "Created" if created else "Updated"
             log.debug("%s <%s>" % (_new, instance))
         super(Product, self).save(*args, **kwargs)
 

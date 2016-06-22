@@ -8,7 +8,8 @@ from django.db import models
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
-from django.conf import settings
+from .session import Session
+from shopify import Session as ShopifySession
 
 log = logging.getLogger(__name__)
 
@@ -28,14 +29,6 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
-    def set_session(self, shopify_resource):
-        # This is odd. This was not built for private apps so we need to set
-        # do `shopify.ShopifyResource.set_site(shop_url)` and we access the
-        # ShopifyResource by going through its class. then we are able to be
-        # sure that it is set on the resource currently and not globaly
-        if hasattr(settings, 'SHOPIFY_PRIVATE_APP') and settings.SHOPIFY_PRIVATE_APP:
-            shopify_resource.__class__.__bases__[0].set_site(settings.SHOP_URL)
-
     def sync_one(self, shopify_resource, caller=None):
         """
         Given a Shopify resource object, synchronise it locally
@@ -43,7 +36,6 @@ class ShopifyResourceManager(models.Manager):
         database. Returns the created or updated local model.
         """
         # Synchronise any related model field.
-        self.set_session(shopify_resource)
         msg = "Syncing shopify resource '%s'" % str(shopify_resource)
         if caller:
             msg += " - called by parent resource '%s'" % str(caller)
@@ -59,9 +51,24 @@ class ShopifyResourceManager(models.Manager):
                 related_model.objects.sync_one(related_shopify_resource,
                                                caller=shopify_resource)
 
+        # get the session info from the header of the resource
+        token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
+        site = shopify_resource.__class__.site
+        # This will clean the url of the prefix and return a tuple
+        site = shopify_resource.__class__.connection._parse_site(site)
+        site = site[0].replace('https://', '')
+        session, _ = Session.objects.get_or_create(site=site,
+                                                   defaults={'token': token})
+        if _:
+            log.info("Created new session '%s'" % session)
+        # add it to the defaults
+        defaults = self.model.get_defaults(shopify_resource)
+        defaults.update({'session': session})
+
         # Synchronise instance.
         instance, created = self.update_or_create(
-            id=shopify_resource.id, defaults=self.model.get_defaults(shopify_resource)
+            id=shopify_resource.id,
+            defaults=defaults,
         )
 
         # Synchronise any child fields.
@@ -70,7 +77,7 @@ class ShopifyResourceManager(models.Manager):
                 child_shopify_resources = getattr(shopify_resource, child_field)
                 child_model.objects.sync_many(child_shopify_resources,
                                               parent_shopify_resource=shopify_resource)
-        _new =  "Created" if created else "Updated"
+        _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
         return instance
@@ -128,7 +135,6 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = instance.to_shopify_resource()
         else:
             shopify_resource = instance
-        self.set_session(shopify_resource)
 
         # Save the Shopify resource.
         if not shopify_resource.save():
@@ -164,6 +170,7 @@ class ShopifyResourceModelBase(models.Model):
     shopify_resource_class = None
     parent_field = None
     related_fields = []
+    exclude_fields = ['session']
     child_fields = {}
 
     objects = ShopifyResourceManager()
@@ -214,7 +221,12 @@ class ShopifyResourceModelBase(models.Model):
         Get a list of field names to be excluded when copying directly from a Shopify resource model and building
         a defaults hash.
         """
-        return cls.get_related_field_names() + list(cls.get_child_fields().keys())  # python 3
+        return (cls.get_related_field_names() +
+                list(cls.get_child_fields().keys()) +  # python 3
+                # I am not sure if this can be removed. that is, we might not
+                # need to add it to the defaults later and just keep it here I
+                # know that there was an issue at one time. But we stable.
+                cls.exclude_fields)  # for the added session field
 
     @classmethod
     def get_parent_field_names(cls):
@@ -257,7 +269,9 @@ class ShopifyResourceModelBase(models.Model):
         # Recursively instantiate any child attributes.
         for child_field, child_model in cls.get_child_fields().items():
             if child_field in json:
-                json[child_field] = [child_model.shopify_resource_from_json(child_field_json) for child_field_json in json[child_field]]
+                json[child_field] = [child_model.shopify_resource_from_json(child_field_json)
+                                     for child_field_json
+                                     in json[child_field]]
 
         # Recursively instantiate any related attributes.
         if hasattr(cls, 'r_fields'):
@@ -273,8 +287,7 @@ class ShopifyResourceModelBase(models.Model):
         Convert this ShopifyResource model instance to its equivalent ShopifyResource.
         """
         instance = self.shopify_resource_class()
-
-        self.manager.set_session(instance)
+        instance.activate_session(self.shopify_session)
 
         # Copy across attributes.
         for default_field in self.get_default_fields():
@@ -303,6 +316,12 @@ class ShopifyResourceModelBase(models.Model):
         """
         return self.to_shopify_resource().attributes
 
+    def _shopify_session(self):
+        shopify_session = ShopifySession(shop_url=self.session.site,
+                                         token=self.session.token)
+        return shopify_session
+    shopify_session = property(_shopify_session)
+
     def sync(self):
         shopify_resource = self.to_shopify_resource()
         shopify_resource.reload()
@@ -322,6 +341,7 @@ class ShopifyResourceModelBase(models.Model):
 
 class ShopifyResourceModel(ShopifyResourceModelBase):
     id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
+    session = models.ForeignKey(Session)
 
     class Meta:
         abstract = True
