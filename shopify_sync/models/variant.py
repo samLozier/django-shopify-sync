@@ -26,7 +26,7 @@ class Variant(ShopifyDatedResourceModel):
     requires_shipping = models.BooleanField(default = True)
     sku = models.CharField(max_length = 255, null = True)
     taxable = models.BooleanField(default = True)
-    title = models.CharField(max_length = 255)
+    title = models.CharField(max_length = 255, blank=True, null=True)
 
     class Meta:
         app_label = 'shopify_sync'
