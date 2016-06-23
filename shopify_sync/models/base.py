@@ -223,7 +223,7 @@ class ShopifyResourceModelBase(models.Model):
         Get a list of field names that should be copied directly from a Shopify resource model when building the
         defaults hash.
         """
-        default_fields_excluded = cls.get_default_fields_excluded()
+        default_fields_excluded = cls.get_default_fields_excluded() + ['session']
         fields = cls.get_parent_field_names()
         fields += [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
         return fields
