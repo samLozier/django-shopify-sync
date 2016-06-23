@@ -40,7 +40,9 @@ class ShopifyResourceManager(models.Manager):
         if caller:
             msg += " - called by parent resource '%s'" % str(caller)
             # this means that we can pull the session from the parent
-            session = session
+            if not session:
+                raise Exception("There was no session passed from "
+                                "caller '%s'" % caller)
         else:
             # get the session info from the header of the resource
             token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
