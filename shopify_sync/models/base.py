@@ -157,7 +157,7 @@ class ShopifyResourceManager(models.Manager):
                 yield shopify_resource
             current_page += 1
 
-    def push_one(self, instance):
+    def push_one(self, instance, session=None):
         """
         Push a local model instance to Shopify, creating or updating in the process.
 
@@ -170,6 +170,9 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = instance.to_shopify_resource()
         else:
             shopify_resource = instance
+        shopify_session = ShopifySession(shop_url=session.site,
+                                         token=session.token)
+        shopify_resource.activate_session(shopify_session)
 
         # Save the Shopify resource.
         if not shopify_resource.save():
@@ -312,12 +315,12 @@ class ShopifyResourceModelBase(models.Model):
         instance.attributes = json
         return instance
 
-    def to_shopify_resource(self):
+    def to_shopify_resource(self, session=None):
         """
         Convert this ShopifyResource model instance to its equivalent ShopifyResource.
         """
         instance = self.shopify_resource_class()
-        instance.activate_session(self.shopify_session)
+        instance.activate_session(session or self.shopify_session)
 
         # Copy across attributes.
         for default_field in self.get_default_fields():
@@ -353,14 +356,15 @@ class ShopifyResourceModelBase(models.Model):
     shopify_session = property(_shopify_session)
 
     def sync(self):
-        shopify_resource = self.to_shopify_resource()
+        shopify_resource = self.to_shopify_resource(session=self.session)
         shopify_resource.reload()
         self.manager.sync_one(shopify_resource)
 
     def save(self, push=False, *args, **kwargs):
         if push:
             log.info("Pushing %s to store" % self)
-            self = self.manager.push_one(self)
+            session = kwargs.pop('session', None)
+            self = self.manager.push_one(self, session=session)
             # have to save so that we can get the id if it is new
             super(ShopifyResourceModelBase, self).save(*args, **kwargs)
         super(ShopifyResourceModelBase, self).save(*args, **kwargs)
