@@ -84,7 +84,7 @@ class ShopifyResourceManager(models.Manager):
 
         return instance
 
-    def sync_many(self, shopify_resources, parent_shopify_resource=None):
+    def sync_many(self, shopify_resources, parent_shopify_resource=None, session=None):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
@@ -95,7 +95,9 @@ class ShopifyResourceManager(models.Manager):
             if self.model.parent_field is not None and parent_shopify_resource is not None:
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
             try:
-                instance = self.sync_one(shopify_resource, caller=parent_shopify_resource)
+                instance = self.sync_one(shopify_resource,
+                                         caller=parent_shopify_resource,
+                                         session=session)
             except NotImplementedError as exc:
                 log.warning("shopify resource '%s' failed to sync for reason '%s'" % (str(shopify_resource), exc))
             else:
@@ -116,10 +118,14 @@ class ShopifyResourceManager(models.Manager):
         """
         import shopify
         # need to make sure that we get a session to use
-        if not session_id:
+        session = kwargs.pop('session', None)
+
+        if not (session_id and session):
             session = Session.objects.first()
-        else:
+        elif session_id:
             session = Session.objects.get(id=session_id)
+        else:
+            session = session
         # Get the class and make sure we have a session that we can use
         shopify_resource_class = self.model.shopify_resource_class
         shopify_session = shopify.Session(session.site, session.token)
