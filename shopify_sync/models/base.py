@@ -80,7 +80,8 @@ class ShopifyResourceManager(models.Manager):
             if hasattr(shopify_resource, child_field):
                 child_shopify_resources = getattr(shopify_resource, child_field)
                 child_model.objects.sync_many(child_shopify_resources,
-                                              parent_shopify_resource=shopify_resource)
+                                              parent_shopify_resource=shopify_resource,
+                                              session=session)
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
