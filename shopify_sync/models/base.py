@@ -4,7 +4,7 @@ import logging
 import math
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import models
+from django.db import models, utils
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
@@ -43,7 +43,7 @@ class ShopifyResourceManager(models.Manager):
             if not session:
                 raise Exception("There was no session passed from "
                                 "caller '%s'" % caller)
-        else:
+        elif not session:
             # get the session info from the header of the resource
             token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
             site = shopify_resource.__class__.site
@@ -54,7 +54,16 @@ class ShopifyResourceManager(models.Manager):
                                                           defaults={'token': token})
             if _:
                 log.info("Created new session '%s'" % session)
-        log.debug(msg)
+        else:
+            # this means that we have a session already
+            pass
+            """
+            raise Exception("Someone wet the bed sadly "
+                            "caller '%s', session '%s', "
+                            "shopify_resource '%s'" % (caller, session,
+                                                       shopify_resource,))
+            """
+        log.debug(msg + 'session %s' % session)
         for related_field_name in self.model.get_related_field_names():
             try:
                 related_shopify_resource = getattr(shopify_resource,
@@ -70,10 +79,18 @@ class ShopifyResourceManager(models.Manager):
         defaults = self.model.get_defaults(shopify_resource)
 
         # Synchronise instance.
-        instance, created = self.update_or_create(
-            id=shopify_resource.id,
-            defaults=defaults,
-        )
+        try:
+            instance, created = self.update_or_create(
+                id=shopify_resource.id,
+                defaults=defaults,
+            )
+        except utils.IntegrityError:
+            # This means that there needs to be the session in the defaults
+            defaults.update({'session': session})
+            instance, created = self.update_or_create(
+                id=shopify_resource.id,
+                defaults=defaults,
+            )
 
         # Synchronise any child fields.
         for child_field, child_model in self.model.get_child_fields().items():
@@ -107,28 +124,23 @@ class ShopifyResourceManager(models.Manager):
                 instances.append(instance)
         return instances
 
-    def sync_all(self, **kwargs):
+    def sync_all(self, session=None, **kwargs):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
         """
-        shopify_resources = self.fetch_all(**kwargs)
-        return self.sync_many(shopify_resources)
+        # need to make sure that we get a session to use
 
-    def fetch_all(self, session_id=None, **kwargs):
+        if not session:
+            session = Session.objects.first()
+        shopify_resources = self.fetch_all(session=session, **kwargs)
+        return self.sync_many(shopify_resources, session=session, **kwargs)
+
+    def fetch_all(self, session=None, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
         """
         import shopify
-        # need to make sure that we get a session to use
-        session = kwargs.pop('session', None)
-
-        if not (session_id and session):
-            session = Session.objects.first()
-        elif session_id:
-            session = Session.objects.get(id=session_id)
-        else:
-            session = session
         # Get the class and make sure we have a session that we can use
         shopify_resource_class = self.model.shopify_resource_class
         shopify_session = shopify.Session(session.site, session.token)
