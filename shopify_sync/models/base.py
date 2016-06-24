@@ -84,7 +84,7 @@ class ShopifyResourceManager(models.Manager):
                 id=shopify_resource.id,
                 defaults=defaults,
             )
-        except utils.IntegrityError:
+        except (utils.IntegrityError, Session.DoesNotExist):
             # This means that there needs to be the session in the defaults
             defaults.update({'session': session})
             instance, created = self.update_or_create(
