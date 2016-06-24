@@ -356,9 +356,10 @@ class ShopifyResourceModelBase(models.Model):
     shopify_session = property(_shopify_session)
 
     def sync(self):
-        shopify_resource = self.to_shopify_resource(session=self.session)
+        shopify_resource = self.to_shopify_resource()
         shopify_resource.reload()
         self.manager.sync_one(shopify_resource)
+        self.refresh_from_db()
 
     def save(self, push=False, *args, **kwargs):
         if push:
