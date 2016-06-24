@@ -167,7 +167,7 @@ class ShopifyResourceManager(models.Manager):
         """
         # Ensure we have a ShopifyResource prepared.
         if hasattr(instance, 'to_shopify_resource'):
-            shopify_resource = instance.to_shopify_resource()
+            shopify_resource = instance.to_shopify_resource(session=session)
         else:
             shopify_resource = instance
         shopify_session = ShopifySession(shop_url=session.site,
