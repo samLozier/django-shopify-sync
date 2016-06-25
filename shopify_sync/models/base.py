@@ -29,7 +29,8 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
-    def sync_one(self, shopify_resource, caller=None, session=None):
+    def sync_one(self, shopify_resource, caller=None, session=None,  # noqa C901
+                 sync_children=True, *args, **kwargs):
         """
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
@@ -63,27 +64,33 @@ class ShopifyResourceManager(models.Manager):
                             "shopify_resource '%s'" % (caller, session,
                                                        shopify_resource,))
             """
-        log.debug(msg + 'session %s' % session)
-        for related_field_name in self.model.get_related_field_names():
+        log.debug(msg + ", session '%s'" % session)
+
+        # Not sync the related fields if we are not doing the children
+        if sync_children:
+            related_field_names = self.model.get_related_field_names()
+        else:
+            related_field_names = []
+
+        for related_field_name in related_field_names:
             try:
                 related_shopify_resource = getattr(shopify_resource,
                                                    related_field_name)
             except NotImplementedError as err:
-                log.warning("Shopify object '%s' is missing '%s' related_field" % (str(shopify_resource), err))
+                log.warning("Shopify object '%s' is missing '%s' "
+                            "related_field" % (str(shopify_resource), err))
             else:
                 related_model = getattr(self.model, related_field_name).field.rel.to
                 related_model.objects.sync_one(related_shopify_resource,
                                                caller=shopify_resource,
-                                               session=session)
+                                               session=session, *args, **kwargs)
 
         defaults = self.model.get_defaults(shopify_resource)
 
         # Synchronise instance.
         try:
-            instance, created = self.update_or_create(
-                id=shopify_resource.id,
-                defaults=defaults,
-            )
+            instance, created = self.update_or_create(id=shopify_resource.id,
+                                                      defaults=defaults)
         except (utils.IntegrityError, Session.DoesNotExist):
             # This means that there needs to be the session in the defaults
             defaults.update({'session': session})
@@ -91,6 +98,12 @@ class ShopifyResourceManager(models.Manager):
                 id=shopify_resource.id,
                 defaults=defaults,
             )
+
+        # don't sync children if set to False
+        if not sync_children:
+            _new = "Created" if created else "Updated"
+            log.debug("%s <%s> (alone)" % (_new, instance))
+            return instance
 
         # Synchronise any child fields.
         for child_field, child_model in self.model.get_child_fields().items():
@@ -157,7 +170,7 @@ class ShopifyResourceManager(models.Manager):
                 yield shopify_resource
             current_page += 1
 
-    def push_one(self, instance, session=None):
+    def push_one(self, instance, session=None, *args, **kwargs):
         """
         Push a local model instance to Shopify, creating or updating in the process.
 
@@ -181,7 +194,7 @@ class ShopifyResourceManager(models.Manager):
             )
             log.error(message)
             raise Exception(message)
-        return self.sync_one(shopify_resource)
+        return self.sync_one(shopify_resource, *args, **kwargs)
 
     def push_many(self, instances):
         """
@@ -363,10 +376,13 @@ class ShopifyResourceModelBase(models.Model):
 
     def save(self, push=False, *args, **kwargs):
         if push:
-            log.info("Pushing %s to store" % self)
+            log.info("Pushing '%s' (%s) to %s" % (self, self.id,
+                                                  self.session.site))
             session = kwargs.pop('session', None)
-            self = self.manager.push_one(self, session=session)
+            session = session if session else self.session
+            self = self.manager.push_one(self, session=session, *args, **kwargs)
             # have to save so that we can get the id if it is new
+            kwargs.pop('sync_children', None)  # remove option field
             super(ShopifyResourceModelBase, self).save(*args, **kwargs)
         super(ShopifyResourceModelBase, self).save(*args, **kwargs)
 
