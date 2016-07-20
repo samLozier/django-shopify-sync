@@ -69,7 +69,7 @@ class Product(ShopifyDatedResourceModel):
     def _get_tag_list(self):
         # Tags are comma-space delimited.
         # https://help.shopify.com/api/reference/product#tags-property
-        return self.tags.split(', ')
+        return self.tags.split(', ') if self.tags else []
 
     def _set_tag_list(self, tag_list):
         # we need to make sure tag_list is a list, if it is not we will make it
@@ -85,7 +85,7 @@ class Product(ShopifyDatedResourceModel):
             self.tag_list += tag if isinstance(tag, list) else [tag]
 
     def remove_tag(self, tag):
-        # remove all instances of a tage or list of tags
+        # remove all instances of a tag or list of tags
         if tag:
             rm_list = tag if isinstance(tag, list) else [tag]
             self.tag_list = [tag_ for tag_ in self.tag_list if tag_ not in rm_list]
