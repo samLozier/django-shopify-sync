@@ -376,10 +376,10 @@ class ShopifyResourceModelBase(models.Model):
 
     def save(self, push=False, *args, **kwargs):
         if push:
-            log.info("Pushing '%s' (%s) to %s" % (self, self.id,
-                                                  self.session.site))
             session = kwargs.pop('session', None)
             session = session if session else self.session
+            log.info("Pushing '%s' (%s) to %s" % (self, self.id,
+                                                  session.site))
             self = self.manager.push_one(self, session=session, *args, **kwargs)
             # have to save so that we can get the id if it is new
             kwargs.pop('sync_children', None)  # remove option field
