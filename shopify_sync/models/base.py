@@ -161,6 +161,7 @@ class ShopifyResourceManager(models.Manager):
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
+        shopify_resource.clear_session()
         return instance
 
     def sync_many(self, shopify_resources, parent_shopify_resource=None, session=None):
@@ -233,6 +234,11 @@ class ShopifyResourceManager(models.Manager):
         shopify_session = ShopifySession(shop_url=session.site,
                                          token=session.token)
         shopify_resource.activate_session(shopify_session)
+        # We don't need to push to shopify if there is nothing that has
+        # changed. We still do a sync with shopify
+        if not instance._changed_fields:
+            log.info("No fields have changed, skipping push for '%s'" % instance)
+            return self.sync_one(shopify_resource, *args, **kwargs)
         # Wwe don't want to push everything we have to shopify. We really only
         # want to push the data that has changed. This prevents us pushing data
         # that is stale. The method we use is to take the attributes that the
