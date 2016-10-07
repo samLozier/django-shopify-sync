@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import logging
+from copy import copy
 import math
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, utils
+from django.db.models.fields.related import ForeignObjectRel
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
@@ -22,6 +24,50 @@ def get_shopify_pagination(total_count):
     last_page = (int(math.ceil(float(total_count) /
                  float(SHOPIFY_API_PAGE_LIMIT))))
     return (1, last_page, SHOPIFY_API_PAGE_LIMIT,)
+
+
+class ChangedFields(object):
+    """
+    Keeps track of fields that have changed since model instantiation, and on
+    save updates only those fields.
+
+    If save is called with update_fields, the passed kwarg is given precedence.
+
+    A caveat: This can't do anything to help you with ManyToManyFields nor
+    reverse relationships, which is par for the course: they aren't handled by
+    save(), but are pushed to the db immediately on change.
+    https://djangosnippets.org/snippets/2985/
+    """
+    related_classes = (models.ManyToManyField, ForeignObjectRel)
+
+    def __init__(self, *args, **kwargs):
+        super(ChangedFields, self).__init__(*args, **kwargs)
+
+        self._changed_fields = {}
+
+    def __setattr__(self, name, value):
+        if hasattr(self, '_changed_fields'):
+            if name in self.__dict__ and self.__dict__[name].__class__ not in self.related_classes:
+                old = getattr(self, name)
+                super(ChangedFields, self).__setattr__(name, value)  # A parent's __setattr__ may change value.
+                new = getattr(self, name)
+
+                if old != new:
+                    changed_fields = self._changed_fields
+
+                    if name in changed_fields:
+                        if changed_fields[name] == new:
+                            # We've changed this field back to its value in the db. No need to push it back up.
+                            changed_fields.pop(name)
+
+                    else:
+                        changed_fields[name] = copy(unicode(new))
+
+            else:
+                super(ChangedFields, self).__setattr__(name, value)
+
+        else:
+            super(ChangedFields, self).__setattr__(name, value)
 
 
 class ShopifyResourceManager(models.Manager):
@@ -173,8 +219,9 @@ class ShopifyResourceManager(models.Manager):
     def push_one(self, instance, session=None, *args, **kwargs):
         """
         Push a local model instance to Shopify, creating or updating in the process.
+        We ensure that we only send data that has been cnaged as well.
 
-        The instance parameter can be either a ShopifyResourceModel, or an already-prepared ShopifyResource.
+        The instance parameter needs to be a ShopifyResourceModeldt.
 
         Returns the locally synchronised model on success.
         """
@@ -182,10 +229,21 @@ class ShopifyResourceManager(models.Manager):
         if hasattr(instance, 'to_shopify_resource'):
             shopify_resource = instance.to_shopify_resource(session=session)
         else:
-            shopify_resource = instance
+            raise NotImplemented("Only pass the ShopifyResourceModel, not the ShopifyResource")
         shopify_session = ShopifySession(shop_url=session.site,
                                          token=session.token)
         shopify_resource.activate_session(shopify_session)
+        # Wwe don't want to push everything we have to shopify. We really only
+        # want to push the data that has changed. This prevents us pushing data
+        # that is stale. The method we use is to take the attributes that the
+        # resource has and edit them to have only the changed fields and the
+        # id. The method calls sync_one so we can update the db with any
+        # changes that have been made, including our own changes
+        id = shopify_resource.attributes.get('id', None)
+        if id:
+            instance._changed_fields.update({'id': id})
+        log.info("Using only changed fields to push '%s': %s" % (instance, instance._changed_fields))
+        shopify_resource.attributes = instance._changed_fields
 
         # Save the Shopify resource.
         if not shopify_resource.save():
@@ -213,7 +271,7 @@ class ShopifyResourceManager(models.Manager):
         abstract = True
 
 
-class ShopifyResourceModelBase(models.Model):
+class ShopifyResourceModelBase(ChangedFields, models.Model):
     """
     Base class for local Model objects that are to be synchronised with Shopify.
     """
