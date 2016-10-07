@@ -144,6 +144,15 @@ class ShopifyResourceManager(models.Manager):
                 id=shopify_resource.id,
                 defaults=defaults,
             )
+        except Exception as e:
+            from pprint import pprint
+            log.error("Sync failed, dumping data!")
+            pprint(session)
+            pprint("Resource:")
+            pprint(shopify_resource.attributes)
+            pprint("Defaults:")
+            pprint(defaults)
+            raise e
 
         # don't sync children if set to False
         if not sync_children:
@@ -212,6 +221,7 @@ class ShopifyResourceManager(models.Manager):
 
         while current_page <= total_pages:
             kwargs['page'] = current_page
+            shopify_resource_class.activate_session(shopify_session)
             shopify_resources = shopify_resource_class.find(**kwargs)
             for shopify_resource in shopify_resources:
                 yield shopify_resource

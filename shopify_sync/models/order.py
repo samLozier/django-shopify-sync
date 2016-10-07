@@ -23,7 +23,7 @@ class Order(ShopifyDatedResourceModel):
         'line_items': LineItem,
     }
 
-    billing_address = JSONField(dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    billing_address = JSONField(null=True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     browser_ip = models.GenericIPAddressField(null = True)
     buyer_accepts_marketing = models.BooleanField(default = False)
     cancel_reason = models.CharField(max_length = 32, null = True)
