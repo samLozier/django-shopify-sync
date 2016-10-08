@@ -10,6 +10,7 @@ from .image import Image
 from .option import Option
 from .variant import Variant
 from .metafield import Metafield
+from .session import activate_session
 
 log = logging.getLogger(__name__)
 
@@ -90,17 +91,17 @@ class Product(ShopifyDatedResourceModel):
             rm_list = tag if isinstance(tag, list) else [tag]
             self.tag_list = [tag_ for tag_ in self.tag_list if tag_ not in rm_list]
 
-    def save(self, sync_meta=True, *args, **kwargs):
-        shopify_resource = self.to_shopify_resource()
-        # only want to sync the metafields if we have it set to true
-        metafields = shopify_resource.metafields() if sync_meta else []
-        for metafield in metafields:
-            defaults = metafield.attributes
-            defaults.update({'product': self, 'session': self.session})
-            instance, created = Metafield.objects.update_or_create(id=defaults['id'],
-                                                                   defaults=defaults)
-            _new = "Created" if created else "Updated"
-            log.debug("%s metafield for product %s <%s>" % (_new, self, instance))
+    def save(self, sync_meta=False, *args, **kwargs):
+        with activate_session(self) as shopify_resource:
+            # only want to sync the metafields if we have it set to true
+            metafields = shopify_resource.metafields() if sync_meta else []
+            for metafield in metafields:
+                defaults = metafield.attributes
+                defaults.update({'product': self, 'session': self.session})
+                instance, created = Metafield.objects.update_or_create(id=defaults['id'],
+                                                                       defaults=defaults)
+                _new = "Created" if created else "Updated"
+                log.debug("%s metafield for product %s <%s>" % (_new, self, instance))
         super(Product, self).save(*args, **kwargs)
 
     def __str__(self):

@@ -7,11 +7,11 @@ import math
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, utils
 from django.db.models.fields.related import ForeignObjectRel
+from pyactiveresource.connection import ResourceNotFound
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
-from .session import Session
-from shopify import Session as ShopifySession
+from .session import Session, ShopifyResource, ShopifySession, activate_session
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,9 @@ class ChangedFields(object):
     def __init__(self, *args, **kwargs):
         super(ChangedFields, self).__init__(*args, **kwargs)
 
-        self._changed_fields = {}
+        self._changed_fields = {
+            'id': self.id,
+        }
 
     def __setattr__(self, name, value):
         if hasattr(self, '_changed_fields'):
@@ -75,42 +77,30 @@ class ShopifyResourceManager(models.Manager):
     Base class for managing Shopify resource models.
     """
 
-    def sync_one(self, shopify_resource, caller=None, session=None,  # noqa C901
+    def sync_one(self, obj, caller=None, # noqa C901
                  sync_children=True, *args, **kwargs):
         """
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
         database. Returns the created or updated local model.
         """
+        if isinstance(obj, ShopifyResource):
+            shopify_resource = obj
+        elif hasattr(obj, 'to_shopify_resource'):
+            shopify_resource = obj.to_shopify_resource()
+        elif not hasattr(obj, 'shopify_resource'):
+            shopify_resource = obj.shopify_resource
+        else:
+            raise AttributeError("Object must have a shopify_resouce attr or "
+                                 "be a ShopifyResource")
         # Synchronise any related model field.
         msg = "Syncing shopify resource '%s'" % str(shopify_resource)
         if caller:
+            # We need to take the session form the parent
+            shopify_resource.session = caller.session
+            print("caller attr", shopify_resource.__dict__)
             msg += " - called by parent resource '%s'" % str(caller)
-            # this means that we can pull the session from the parent
-            if not session:
-                raise Exception("There was no session passed from "
-                                "caller '%s'" % caller)
-        elif not session:
-            # get the session info from the header of the resource
-            token = shopify_resource.__class__.headers['X-Shopify-Access-Token']
-            site = shopify_resource.__class__.site
-            # This will clean the url of the prefix and return a tuple
-            site = shopify_resource.__class__.connection._parse_site(site)
-            site = site[0].replace('https://', '')
-            session, _ = Session.objects.update_or_create(site=site,
-                                                          defaults={'token': token})
-            if _:
-                log.info("Created new session '%s'" % session)
-        else:
-            # this means that we have a session already
-            pass
-            """
-            raise Exception("Someone wet the bed sadly "
-                            "caller '%s', session '%s', "
-                            "shopify_resource '%s'" % (caller, session,
-                                                       shopify_resource,))
-            """
-        log.debug(msg + ", session '%s'" % session)
+        log.debug(msg + ", site '%s'" % shopify_resource.session.site)
 
         # Not sync the related fields if we are not doing the children
         if sync_children:
@@ -122,14 +112,15 @@ class ShopifyResourceManager(models.Manager):
             try:
                 related_shopify_resource = getattr(shopify_resource,
                                                    related_field_name)
-            except NotImplementedError as err:
-                log.warning("Shopify object '%s' is missing '%s' "
-                            "related_field" % (str(shopify_resource), err))
-            else:
+            except AttributeError:
+                # this means we are getting a shopify resource not a django model
+                related_shopify_resource = shopify_resource.attributes.get(related_field_name)
+            if related_shopify_resource:
                 related_model = getattr(self.model, related_field_name).field.rel.to
-                related_model.objects.sync_one(related_shopify_resource,
-                                               caller=shopify_resource,
-                                               session=session, *args, **kwargs)
+                with activate_session(related_shopify_resource, session=shopify_resource.session) as related_shopify_resource:
+                    related_model.objects.sync_one(related_shopify_resource,
+                                                   caller=shopify_resource,
+                                                   *args, **kwargs)
 
         defaults = self.model.get_defaults(shopify_resource)
 
@@ -139,19 +130,23 @@ class ShopifyResourceManager(models.Manager):
                                                       defaults=defaults)
         except (utils.IntegrityError, Session.DoesNotExist):
             # This means that there needs to be the session in the defaults
-            defaults.update({'session': session})
+            if isinstance(shopify_resource.session, ShopifySession):
+                defaults.update({'session': shopify_resource.session.model})
+            else:
+                defaults.update({'session': shopify_resource.session})
             instance, created = self.update_or_create(
                 id=shopify_resource.id,
                 defaults=defaults,
             )
         except Exception as e:
             from pprint import pprint
+            import traceback
             log.error("Sync failed, dumping data!")
-            pprint(session)
             pprint("Resource:")
             pprint(shopify_resource.attributes)
             pprint("Defaults:")
             pprint(defaults)
+            traceback.print_exc()
             raise e
 
         # don't sync children if set to False
@@ -165,15 +160,13 @@ class ShopifyResourceManager(models.Manager):
             if hasattr(shopify_resource, child_field):
                 child_shopify_resources = getattr(shopify_resource, child_field)
                 child_model.objects.sync_many(child_shopify_resources,
-                                              parent_shopify_resource=shopify_resource,
-                                              session=session)
+                                              parent_shopify_resource=shopify_resource)
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
 
-        shopify_resource.clear_session()
         return instance
 
-    def sync_many(self, shopify_resources, parent_shopify_resource=None, session=None):
+    def sync_many(self, shopify_resources, parent_shopify_resource=None):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
@@ -183,94 +176,99 @@ class ShopifyResourceManager(models.Manager):
             # If needed, ensure the parent ID is stored on the resource before synchronising it.
             if self.model.parent_field is not None and parent_shopify_resource is not None:
                 setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
-            try:
-                instance = self.sync_one(shopify_resource,
-                                         caller=parent_shopify_resource,
-                                         session=session)
-            except NotImplementedError as exc:
-                log.warning("shopify resource '%s' failed to sync for reason '%s'" % (str(shopify_resource), exc))
-            else:
-                instances.append(instance)
+            instance = self.sync_one(shopify_resource,
+                                     caller=parent_shopify_resource)
+            instances.append(instance)
         return instances
 
-    def sync_all(self, session=None, **kwargs):
+    def sync_all(self, session, **kwargs):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
         """
         # need to make sure that we get a session to use
 
-        if not session:
-            session = Session.objects.first()
         shopify_resources = self.fetch_all(session=session, **kwargs)
-        return self.sync_many(shopify_resources, session=session, **kwargs)
+        return self.sync_many(shopify_resources, **kwargs)
 
-    def fetch_all(self, session=None, **kwargs):
+    def fetch_all(self, session, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
         """
-        import shopify
         # Get the class and make sure we have a session that we can use
-        shopify_resource_class = self.model.shopify_resource_class
-        shopify_session = shopify.Session(session.site, session.token)
-        # And now we activate the session on the class
-        shopify_resource_class.activate_session(shopify_session)
-        # And we can continue as normal now that we have a session
-        total_count = shopify_resource_class.count(**kwargs)
-        current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
+        shopify_class = self.model.shopify_resource_class()
+        with activate_session(shopify_class, session=session) as shopify_resource_class:
+            total_count = shopify_resource_class.count(**kwargs)
+            current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
 
         while current_page <= total_pages:
             kwargs['page'] = current_page
-            shopify_resource_class.activate_session(shopify_session)
-            shopify_resources = shopify_resource_class.find(**kwargs)
-            for shopify_resource in shopify_resources:
-                yield shopify_resource
-            current_page += 1
+            with activate_session(shopify_class, session=session) as shopify_resource_class:
+                shopify_resources = shopify_resource_class.find(**kwargs)
+                for shopify_resource in shopify_resources:
+                    shopify_resource.session = shopify_resource_class.session
+                    yield shopify_resource
+                current_page += 1
 
-    def push_one(self, instance, session=None, *args, **kwargs):
+    def push_one(self, instance, force=False, create=False, *args, **kwargs):
         """
         Push a local model instance to Shopify, creating or updating in the process.
         We ensure that we only send data that has been cnaged as well.
 
-        The instance parameter needs to be a ShopifyResourceModeldt.
+        The instance parameter needs to be a ShopifyResourceModel.
 
         Returns the locally synchronised model on success.
         """
-        # Ensure we have a ShopifyResource prepared.
-        if hasattr(instance, 'to_shopify_resource'):
-            shopify_resource = instance.to_shopify_resource(session=session)
-        else:
-            raise NotImplemented("Only pass the ShopifyResourceModel, not the ShopifyResource")
-        shopify_session = ShopifySession(shop_url=session.site,
-                                         token=session.token)
-        shopify_resource.activate_session(shopify_session)
+        session = instance.session
         # We don't need to push to shopify if there is nothing that has
         # changed. We still do a sync with shopify
-        if not instance._changed_fields:
+        if len(instance._changed_fields) == 1 and not force:
             log.info("No fields have changed, skipping push for '%s'" % instance)
-            return self.sync_one(shopify_resource, *args, **kwargs)
-        # Wwe don't want to push everything we have to shopify. We really only
+            with activate_session(instance, session=session) as instance:
+                # TODO: Not sure why this needs to be here, the activate_session
+                # should handel setting that
+                instance.session = session
+                return self.sync_one(instance, *args, **kwargs)
+        # We don't want to push everything we have to shopify. We really only
         # want to push the data that has changed. This prevents us pushing data
         # that is stale. The method we use is to take the attributes that the
         # resource has and edit them to have only the changed fields and the
         # id. The method calls sync_one so we can update the db with any
         # changes that have been made, including our own changes
-        id = shopify_resource.attributes.get('id', None)
-        if id:
-            instance._changed_fields.update({'id': id})
-        log.info("Using only changed fields to push '%s': %s" % (instance, instance._changed_fields))
-        shopify_resource.attributes = instance._changed_fields
-
+        if not force:
+            instance.attributes = instance._changed_fields
+            log.info("Using only changed fields to push '%s': %s" % (instance, instance._changed_fields))
         # Save the Shopify resource.
-        if not shopify_resource.save():
+        try:
+            with activate_session(instance, session=session) as shopify_resource:
+                successful = shopify_resource.save()
+        except ResourceNotFound:
+            log.warning("Resource '%s' could not be found!" % shopify_resource)
+            if create:
+                log.info("Matthew 10:26, the 'create' kwarg was passed, time to create!")
+                with activate_session(instance, session=session) as shopify_resource:
+                    shopify_resource = instance.clean_for_post(shopify_resource)
+                    successful = shopify_resource.save()
+            else:
+                # TODO: Should have this use the ReasourceNotFound exception,
+                # but that requires a object with a msg attr
+                raise Exception("Could not find the resource '%s', if you wish to "
+                                "create the resource if it does not exist, use the "
+                                "kwarg 'create=True'." % shopify_resource)
+        if not successful:
             message = '[Shopify API Errors]: {0}'.format(
-                ', '.join(shopify_resource.errors.full_messages())
+                ',\n'.join(shopify_resource.errors.full_messages())
             )
             log.error(message)
             raise Exception(message)
-        return self.sync_one(shopify_resource, *args, **kwargs)
 
-    def push_many(self, instances):
+        with activate_session(shopify_resource, session=session) as shopify_resource:
+            # TODO: Not sure why this needs to be here, the activate_session
+            # should handel setting that
+            shopify_resource.session = session
+            return self.sync_one(shopify_resource, *args, **kwargs)
+
+    def push_many(self, instances, *args, **kwargs):
         """
         Push a list of local model instances to Shopify,
         creating or updating in the process.
@@ -279,7 +277,7 @@ class ShopifyResourceManager(models.Manager):
         """
         synchronised_instances = []
         for instance in instances:
-            synchronised_instance = self.push_one(instance)
+            synchronised_instance = self.push_one(instance, *args, **kwargs)
             synchronised_instances.append(synchronised_instance)
         return synchronised_instances
 
@@ -334,7 +332,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         Get a list of field names that should be copied directly from a Shopify resource model when building the
         defaults hash.
         """
-        default_fields_excluded = cls.get_default_fields_excluded() + ['session']
+        default_fields_excluded = cls.get_default_fields_excluded()
         fields = cls.get_parent_field_names()
         fields += [field.name for field in cls._meta.concrete_fields if field.name not in default_fields_excluded]
         return fields
@@ -346,7 +344,8 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         a defaults hash.
         """
         return (cls.get_related_field_names() +
-                list(cls.get_child_fields().keys()))  # python 3
+                list(cls.get_child_fields().keys()) +  # python 3
+                ['session', 'model'])
 
     @classmethod
     def get_parent_field_names(cls):
@@ -402,12 +401,64 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         instance.attributes = json
         return instance
 
-    def to_shopify_resource(self, session=None):
+    @staticmethod
+    def clean_for_post(shopify_resource):
+        """
+        When we use POST, we cannot have a 'id' present or else we get this error:
+
+            [Shopify API Errors]: Source name cannot be set to a protected
+            value by an untrusted API client.
+
+        Our sloution is to return the object with the id removed. We use a static method
+        as we want to pass the object and it could be a ShopifyResource or model
+        """
+        clean_these_lists = ['shipping_lines', 'line_items']
+        clean_these_keys = ['id', 'tax_lines', 'order_number', 'number', 'source_name']
+
+        shopify_resource.id = None
+
+        for key in clean_these_keys:
+            shopify_resource.attributes.pop(key, None)
+
+        for key in clean_these_lists:
+            lines = shopify_resource.attributes.pop(key, None)
+            if lines:
+                for line in lines:
+                    if isinstance(line, ShopifyResource):
+                        line.attributes.pop('id', None)
+                        line.attributes.pop('order_id', None)
+                    else:
+                        line.pop('id', None)
+                shopify_resource.attributes[key] = lines
+
+        if shopify_resource.attributes['billing_address']:
+            # the billing zip can be blank, but when we push we need to have it
+            # for some stupid reason. Like there database doesn't require a
+            # zip, why should we have to provide it then. This is the shit that
+            # makes me get all made at shopify and such...
+            if not shopify_resource.attributes['billing_address']['zip']:
+                # yeah this will also happen:
+                # 'billing_address Zip is not valid for Canada'
+                shopify_resource.attributes['billing_address']['zip'] = 'K0L 2W0'
+            if not shopify_resource.attributes['billing_address']['city']:
+                # apprently PO boxes in Singapore don't need a city
+                shopify_resource.attributes['billing_address']['city'] = 'Shopify Sux Eggs'
+            if not shopify_resource.attributes['billing_address']['address1']:
+                # Apprently you only really need the zip.
+                shopify_resource.attributes['billing_address']['address1'] = ("a';DROP TABLE customers; SELECT"
+                                                                              "* FROM customers WHERE 't' = 't'")
+            if not shopify_resource.attributes['billing_address']['country']:
+                # Sadly this has to be a county shopify knows
+                shopify_resource.attributes['billing_address']['country'] = 'Azerbaijan'
+
+        print('cleanded attr', shopify_resource.attributes)
+        return shopify_resource
+
+    def to_shopify_resource(self):
         """
         Convert this ShopifyResource model instance to its equivalent ShopifyResource.
         """
         instance = self.shopify_resource_class()
-        instance.activate_session(session or self.shopify_session)
 
         # Copy across attributes.
         for default_field in self.get_default_fields():
@@ -428,6 +479,13 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
             if hasattr(self, child_field):
                 setattr(instance, child_field, [child.to_shopify_resource() for child in getattr(self, child_field)])
 
+        # Add the session to the instace
+        instance.session = self.session
+        # TODO: They *really* should not be there, like there are not in
+        # get_default_fields()!!!
+        instance.attributes.pop('session', None)
+        instance.attributes.pop('model', None)
+
         return instance
 
     def to_json(self):
@@ -435,12 +493,6 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         Convert this ShopifyResource model instance to a "JSON" (simple Python) object.
         """
         return self.to_shopify_resource().attributes
-
-    def _shopify_session(self):
-        shopify_session = ShopifySession(shop_url=self.session.site,
-                                         token=self.session.token)
-        return shopify_session
-    shopify_session = property(_shopify_session)
 
     def sync(self):
         shopify_resource = self.to_shopify_resource()

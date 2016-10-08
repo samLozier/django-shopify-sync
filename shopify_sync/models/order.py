@@ -71,7 +71,7 @@ class Order(ShopifyDatedResourceModel):
     line_items = property(_line_items)
 
     def _refund(self):
-        return []
+        return NotImplementedError
     refund = property(_refund)
 
     def __str__(self):
