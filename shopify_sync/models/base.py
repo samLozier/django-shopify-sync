@@ -109,7 +109,6 @@ class ShopifyResourceManager(models.Manager):
         if caller:
             # We need to take the session form the parent
             shopify_resource.session = caller.session
-            print("caller attr", shopify_resource.__dict__)
             msg += " - called by parent resource '%s'" % str(caller)
         log.debug(msg + ", site '%s'" % shopify_resource.session.site)
 
@@ -208,7 +207,7 @@ class ShopifyResourceManager(models.Manager):
         # need to make sure that we get a session to use
 
         shopify_resources = self.fetch_all(session=session, **kwargs)
-        return self.sync_many(shopify_resources, **kwargs)
+        return self.sync_many(shopify_resources)
 
     def fetch_all(self, session, **kwargs):
         """

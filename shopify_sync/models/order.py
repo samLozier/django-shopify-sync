@@ -3,9 +3,12 @@ from __future__ import unicode_literals
 import shopify
 from django.db import models
 from jsonfield import JSONField
+import json
 
 from ..encoders import ShopifyDjangoJSONEncoder, empty_list
+from pyactiveresource.connection import ResourceInvalid
 from .base import ShopifyDatedResourceModel
+from .session import activate_session
 from .line_item import LineItem
 from .customer import Customer
 from .address import ShippingAddress
@@ -73,9 +76,78 @@ class Order(ShopifyDatedResourceModel):
         return LineItem.objects.filter(order=self)
     line_items = property(_line_items)
 
-    def _refund(self):
-        return NotImplementedError
-    refund = property(_refund)
+    def calculate_refund(self, line_items=None):
+        URL = 'refunds/calculate'
+        line_items = line_items if line_items else self.line_items
+        refund_lines = []
+        for line in line_items:
+            refund_lines.append({
+                "line_item_id": line.id,
+                "quantity": line.quantity
+            })
+
+        data = {
+            "refund": {
+               "shipping": {
+                    "full_refund": True
+                },
+                "refund_line_items": refund_lines
+            }
+        }
+        body = json.dumps(data)
+        with activate_session(self) as shopify_resource:
+            try:
+                response = shopify_resource.post(URL, body=body)
+            except ResourceInvalid as response:
+                print("sent data %s" % body)
+                return response
+
+        body = json.loads(response.body)
+        errors = data.pop('errors', None)
+        if errors:
+            return errors
+        print(body)
+        return body
+
+    def refund_from_transaction(self, data):
+        URL = 'refunds'
+
+        errors = data.pop('errors', None)
+        if errors:
+            return errors
+
+        transactions = data['refund'].pop('transactions')
+        if not transactions:
+            return "could not refund"
+        for transaction in transactions:
+            transaction.update({
+                "kind": "refund",
+            })
+        data['refund'].update({
+            "restock": False,
+            "note": "The Campaign failed, sorry",
+            "transactions": transactions,
+        })
+
+        body = json.dumps(data)
+        with activate_session(self) as shopify_resource:
+            response = shopify_resource.post(URL, body=body)
+        body = json.loads(response.body)
+
+        return body
+
+    def refund(self, **kwargs):
+        data = self.calculate_refund(**kwargs)
+        if isinstance(data, dict):
+            return self.refund_from_transaction(data)
+        else:
+            return data
+
+    def _refunds(self):
+        URL = "refunds"
+        with activate_session(self) as shopify_resource:
+            return shopify_resource.get(URL)
+    refunds = property(_refunds)
 
     def __str__(self):
         return self.name
