@@ -20,6 +20,10 @@ def get_shopify_pagination(total_count):
     """
     Get the appropriate pagination to use with Shopify's API
     given the total number of records.
+
+    :param total_count: The number of resources that you are trying to get.
+    :return:
+    :rtype: tuple with the starting page, last page and the page limit.
     """
     last_page = (int(math.ceil(float(total_count) /
                  float(SHOPIFY_API_PAGE_LIMIT))))
@@ -83,6 +87,13 @@ class ShopifyResourceManager(models.Manager):
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
         database. Returns the created or updated local model.
+
+        :param obj:
+        :param caller:
+        :param sync_children:
+        :param args:
+        :param kwargs:
+        :return:
         """
         if isinstance(obj, ShopifyResource):
             shopify_resource = obj
@@ -170,6 +181,10 @@ class ShopifyResourceManager(models.Manager):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
+
+        :param shopify_resources:
+        :param parent_shopify_resource:
+        :return:
         """
         instances = []
         for shopify_resource in shopify_resources:
@@ -185,6 +200,10 @@ class ShopifyResourceManager(models.Manager):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
+
+        :param session:
+        :param kwargs:
+        :return:
         """
         # need to make sure that we get a session to use
 
@@ -194,19 +213,31 @@ class ShopifyResourceManager(models.Manager):
     def fetch_all(self, session, **kwargs):
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
+
+        :param session:
+        :param kwargs:
+        :return:
         """
         # Get the class and make sure we have a session that we can use
         shopify_class = self.model.shopify_resource_class()
         with activate_session(shopify_class, session=session) as shopify_resource_class:
+            # Get the pagination info to make the calls
             total_count = shopify_resource_class.count(**kwargs)
             current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
 
-        while current_page <= total_pages:
-            kwargs['page'] = current_page
-            with activate_session(shopify_class, session=session) as shopify_resource_class:
-                shopify_resources = shopify_resource_class.find(**kwargs)
+            while current_page <= total_pages:
+                # start looping the pages. Set the kwarg so that it is added to
+                # any special query that we had
+                kwargs['page'] = current_page
+                with activate_session(shopify_class, session=session) as shopify_resource_class:
+                    # Not 100% sure why this is needed. I am assuming that as
+                    # we have another 'with' that is cleared on the sync_one,
+                    # that this will also kill our sesion here
+                    shopify_resources = shopify_resource_class.find(**kwargs)
+                # Loop through all the resources, set the sessions and then
+                # yeild for sync_one to handle
                 for shopify_resource in shopify_resources:
-                    shopify_resource.session = shopify_resource_class.session
+                    shopify_resource.session = session
                     yield shopify_resource
                 current_page += 1
 
@@ -218,16 +249,24 @@ class ShopifyResourceManager(models.Manager):
         The instance parameter needs to be a ShopifyResourceModel.
 
         Returns the locally synchronised model on success.
+
+        :param instance:
+        :param force:
+        :param create:
+        :param args:
+        :param kwargs:
+        :return:
         """
+        if create and not force:
+            raise AttributeError("Cannot have 'create' kwarg be True without"
+                                 "having 'force' also be True.")
         session = instance.session
         # We don't need to push to shopify if there is nothing that has
-        # changed. We still do a sync with shopify
-        if len(instance._changed_fields) == 1 and not force:
+        # changed. We still do a sync with shopify. If we do have a create flag
+        # we will want to make sure that we don't just do a sync
+        if len(instance._changed_fields) == 1 and not (force or create):
             log.info("No fields have changed, skipping push for '%s'" % instance)
             with activate_session(instance, session=session) as instance:
-                # TODO: Not sure why this needs to be here, the activate_session
-                # should handel setting that
-                instance.session = session
                 return self.sync_one(instance, *args, **kwargs)
         # We don't want to push everything we have to shopify. We really only
         # want to push the data that has changed. This prevents us pushing data
@@ -235,26 +274,34 @@ class ShopifyResourceManager(models.Manager):
         # resource has and edit them to have only the changed fields and the
         # id. The method calls sync_one so we can update the db with any
         # changes that have been made, including our own changes
-        if not force:
-            instance.attributes = instance._changed_fields
-            log.info("Using only changed fields to push '%s': %s" % (instance, instance._changed_fields))
-        # Save the Shopify resource.
-        try:
-            with activate_session(instance, session=session) as shopify_resource:
+        with activate_session(instance, session=session) as shopify_resource:
+            if not force:
+                # This needs to be in the with loop as activate_session calls
+                # to_shopify_resource and that ignores the _changed_fields, so
+                # we need to re set them
+                shopify_resource.attributes = instance._changed_fields
+                log.info("Using only changed fields to push '%s': %s" % (shopify_resource, shopify_resource.attributes))
+            # Save the Shopify resource.
+            try:
                 successful = shopify_resource.save()
-        except ResourceNotFound:
-            log.warning("Resource '%s' could not be found!" % shopify_resource)
-            if create:
-                log.info("Matthew 10:26, the 'create' kwarg was passed, time to create!")
-                with activate_session(instance, session=session) as shopify_resource:
-                    shopify_resource = instance.clean_for_post(shopify_resource)
-                    successful = shopify_resource.save()
-            else:
-                # TODO: Should have this use the ReasourceNotFound exception,
-                # but that requires a object with a msg attr
-                raise Exception("Could not find the resource '%s', if you wish to "
-                                "create the resource if it does not exist, use the "
-                                "kwarg 'create=True'." % shopify_resource)
+            except ResourceNotFound:
+                # When this fails, that means that there is no resource in shopify,
+                # then if we have a create kwarg, then we will create the resource,
+                # other wise we will just throw the error
+                if create:
+                    log.info("Matthew 10:26, the 'create' kwarg was passed, "
+                             "the resource doesn't exist, time to create!")
+                    with activate_session(instance, session=session) as shopify_resource:
+                        shopify_resource = instance.clean_for_post(shopify_resource)
+                        successful = shopify_resource.save()
+                else:
+                    # TODO: Should have this use the ReasourceNotFound exception,
+                    # but that requires a object with a msg attr
+                    log.warning("Resource '%s' could not be found!" % shopify_resource)
+                    raise Exception("Could not find the resource '%s', if you wish to "
+                                    "create the resource if it does not exist, use the "
+                                    "kwarg 'create=True'." % shopify_resource)
+
         if not successful:
             message = '[Shopify API Errors]: {0}'.format(
                 ',\n'.join(shopify_resource.errors.full_messages())
@@ -263,9 +310,6 @@ class ShopifyResourceManager(models.Manager):
             raise Exception(message)
 
         with activate_session(shopify_resource, session=session) as shopify_resource:
-            # TODO: Not sure why this needs to be here, the activate_session
-            # should handel setting that
-            shopify_resource.session = session
             return self.sync_one(shopify_resource, *args, **kwargs)
 
     def push_many(self, instances, *args, **kwargs):
@@ -274,6 +318,12 @@ class ShopifyResourceManager(models.Manager):
         creating or updating in the process.
 
         Returns the list of locally synchronised models on success.
+
+
+        :param instances:
+        :param args:
+        :param kwargs:
+        :return:
         """
         synchronised_instances = []
         for instance in instances:
@@ -409,7 +459,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
             [Shopify API Errors]: Source name cannot be set to a protected
             value by an untrusted API client.
 
-        Our sloution is to return the object with the id removed. We use a static method
+        Our solution is to return the object with the id removed. We use a static method
         as we want to pass the object and it could be a ShopifyResource or model
         """
         clean_these_lists = ['shipping_lines', 'line_items']
@@ -431,17 +481,27 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
                         line.pop('id', None)
                 shopify_resource.attributes[key] = lines
 
-        if shopify_resource.attributes['billing_address']:
+        if 'billing_address' in shopify_resource.attributes:
             # the billing zip can be blank, but when we push we need to have it
             # for some stupid reason. Like there database doesn't require a
             # zip, why should we have to provide it then. This is the shit that
             # makes me get all made at shopify and such...
+            if not shopify_resource.attributes['billing_address']:
+                # appreently the billing address can be blank
+                shopify_resource.attributes['billing_address'] = {
+                    'last_name': 'Empty',
+                    'first_name': 'Billing addr',
+                    'zip': None,
+                    'city': None,
+                    'address1': None,
+                    'country': None,
+                }
             if not shopify_resource.attributes['billing_address']['zip']:
                 # yeah this will also happen:
                 # 'billing_address Zip is not valid for Canada'
                 shopify_resource.attributes['billing_address']['zip'] = 'K0L 2W0'
             if not shopify_resource.attributes['billing_address']['city']:
-                # apprently PO boxes in Singapore don't need a city
+                # apparently PO boxes in Singapore don't need a city
                 shopify_resource.attributes['billing_address']['city'] = 'Shopify Sux Eggs'
             if not shopify_resource.attributes['billing_address']['address1']:
                 # Apprently you only really need the zip.
@@ -459,6 +519,11 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         Convert this ShopifyResource model instance to its equivalent ShopifyResource.
         """
         instance = self.shopify_resource_class()
+        # pyactiveresource changes __setattr__ to add attr to the attributes
+        # dictionary and that is super annoying in so many ways so this is the
+        # hack to undo that shit.
+        instance.__dict__['session'] = self.session
+        instance.__dict__['model'] = self
 
         # Copy across attributes.
         for default_field in self.get_default_fields():
@@ -478,13 +543,6 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         for child_field, child_model in self.get_child_fields().items():
             if hasattr(self, child_field):
                 setattr(instance, child_field, [child.to_shopify_resource() for child in getattr(self, child_field)])
-
-        # Add the session to the instace
-        instance.session = self.session
-        # TODO: They *really* should not be there, like there are not in
-        # get_default_fields()!!!
-        instance.attributes.pop('session', None)
-        instance.attributes.pop('model', None)
 
         return instance
 

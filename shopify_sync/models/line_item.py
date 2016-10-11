@@ -37,5 +37,18 @@ class LineItem(ShopifyResourceModel):
     class Meta:
         app_label = 'shopify_sync'
 
+    def fix_ids(self):
+        from . import Product
+        product = Product.objects.get(title=self.title)
+        self.product_id = product.id
+
+        if len(product.variants) == 1:
+            self.variant_id = product.variants[0].id
+        else:
+            # there is more than one variant, so we look up the title
+            variant = product.variant_set.get(title=self.variant_title)
+            self.variant_id = variant.id
+        self.save()
+
     def __str__(self):
         return self.name

@@ -11,7 +11,6 @@ from .customer import Customer
 from .address import ShippingAddress
 
 
-
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
     related_fields = ['customer', 'shipping_address']
@@ -61,6 +60,10 @@ class Order(ShopifyDatedResourceModel):
 
     class Meta:
         app_label = 'shopify_sync'
+
+    def fix_ids(self):
+        for line_item in self.line_items:
+            line_item.fix_ids()
 
     def _fulfillments(self):
         return []
