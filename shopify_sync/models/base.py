@@ -99,7 +99,7 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = obj
         elif hasattr(obj, 'to_shopify_resource'):
             shopify_resource = obj.to_shopify_resource()
-        elif not hasattr(obj, 'shopify_resource'):
+        elif hasattr(obj, 'shopify_resource'):
             shopify_resource = obj.shopify_resource
         else:
             raise AttributeError("Object must have a shopify_resouce attr or "
@@ -173,6 +173,7 @@ class ShopifyResourceManager(models.Manager):
                                               parent_shopify_resource=shopify_resource)
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
+        print("fount it", self.get(id=instance.id))
 
         return instance
 

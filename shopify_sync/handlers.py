@@ -25,7 +25,11 @@ def get_topic_model(topic, data):
 
 
 def get_topic_action(topic):
-    return 'sync_one'
+    topic = topic.split('/')[1]
+    mapping = {
+        'create': 'sync_one',
+    }
+    return mapping.get(topic, None)
 
 
 def webhook_received_handler(sender, domain, topic, data, **kwargs):
@@ -50,5 +54,11 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     shopify_resource = model.shopify_resource_from_json(data)
 
     # Execute the desired action.
+    print("d")
     if model_action == 'sync_one':
-        model.objects.sync_one(shopify_resource)
+        instance = model.objects.sync_one(shopify_resource)
+    else:
+        assert "The model action has to me sync_one"
+    print("f")
+    instance.save()
+    print("g")
