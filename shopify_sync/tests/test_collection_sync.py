@@ -11,9 +11,10 @@ class CollectionSyncTestCase(SyncTestCase):
 
         # Send a test "collection created" webhook with a SmartCollection payload.
         data = self.read_fixture('smartcollection_created')
-        self.post_shopify_webhook(topic='collections/create', domain=session.site, data=data)
+        response = self.post_shopify_webhook(topic='collections/create', domain=session.site, data=data)
 
         # Verify that the synchronisation occurred.
+        self.assertEqual(response.status_code, 200)
         self.assertSynced(session, data, SmartCollection)
 
     def test_custom_collection_created_on_create_webhook(self):
@@ -22,7 +23,8 @@ class CollectionSyncTestCase(SyncTestCase):
 
         # Send a test "collection created" webhook with a CustomCollection paylod.
         data = self.read_fixture('customcollection_created')
-        self.post_shopify_webhook(topic='collections/create', domain=session.site, data=data)
+        response = self.post_shopify_webhook(topic='collections/create', domain=session.site, data=data)
 
         # Verify that the synchronisation occurred.
+        self.assertEqual(response.status_code, 200)
         self.assertSynced(session, data, CustomCollection)

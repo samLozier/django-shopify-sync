@@ -54,11 +54,9 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     shopify_resource = model.shopify_resource_from_json(data)
 
     # Execute the desired action.
-    print("d")
     if model_action == 'sync_one':
+        print("This will print")
         instance = model.objects.sync_one(shopify_resource)
+        print("This will not")
     else:
         assert "The model action has to me sync_one"
-    print("f")
-    instance.save()
-    print("g")

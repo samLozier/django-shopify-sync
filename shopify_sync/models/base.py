@@ -173,7 +173,7 @@ class ShopifyResourceManager(models.Manager):
                                               parent_shopify_resource=shopify_resource)
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
-        print("fount it", self.get(id=instance.id))
+        print("Currently in sync", self.all())
 
         return instance
 
@@ -447,7 +447,6 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
             for r_field, r_model in cls.get_r_fields().items():
                 if r_field in json:
                     json[r_field] = r_model.shopify_resource_from_json(json[r_field])
-
         instance.attributes = json
         return instance
 

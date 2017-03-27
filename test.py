@@ -5,6 +5,7 @@ import django
 from django.conf import settings
 import logging
 log = logging.getLogger()
+log.addHandler(logging.StreamHandler())
 log.setLevel(10)
 
 import traceback
@@ -34,6 +35,27 @@ if __name__ == '__main__':
         USE_TZ = True,
         SHOPIFY_APP_API_SECRET = 'hush',
         log = log,
+        LOGGING = {
+	    'version': 1,
+	    'filters': {
+		'require_debug_true': {
+		    '()': 'django.utils.log.RequireDebugTrue',
+		}
+	    },
+	    'handlers': {
+		'console': {
+		    'level': 'DEBUG',
+		    'filters': ['require_debug_true'],
+		    'class': 'logging.StreamHandler',
+		}
+	    },
+	#    'loggers': {
+	#	'django.db.backends': {
+	#           'level': 'DEBUG',
+	#            'handlers': ['console'],
+	#         }
+	#    }
+    	}
     )
 
     django.setup()

@@ -11,7 +11,9 @@ class ProductSyncTestCase(SyncTestCase):
 
         # Send a test "product created" webhook.
         data = self.read_fixture('product_created')
-        self.post_shopify_webhook(topic='products/create', domain=session.site, data=data)
+        response = self.post_shopify_webhook(topic='products/create', domain=session.site, data=data)
 
         # Verify that the synchronisation occurred.
+        self.assertEqual(response.status_code, 200)
+        print(Product.objects.all())
         self.assertSynced(session, data, Product)
