@@ -9,7 +9,7 @@ setup(
     long_description = open('README.rst').read(),
     author = 'David Burke',
     author_email = 'dburke@thelabnyc.com',
-    url = 'https://github.com/gavinballard/django-shopify-syn://gitlab.com/thelabnyc/django-shopify-sync',
+    url = 'https://gitlab.com/thelabnyc/django-shopify-sync',
     license = 'MIT',
 
     packages = find_packages(),
