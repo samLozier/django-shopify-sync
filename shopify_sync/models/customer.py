@@ -12,7 +12,7 @@ class Customer(ShopifyDatedResourceModel):
     related_fields = ['default_address']
 
     accepts_marketing = models.BooleanField(default = False)
-    default_address = models.ForeignKey(Address, null = True, related_name = 'default_address')
+    default_address = models.ForeignKey(Address, null = True, related_name = 'default_address', on_delete=models.CASCADE)
     email = models.EmailField(null=True)
     first_name = models.CharField(max_length=128, null=True)
     multipass_identified = models.CharField(max_length=128, null = True)

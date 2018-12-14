@@ -12,7 +12,7 @@ class Option(ShopifyResourceModel):
 
     name = models.CharField(max_length = 255)
     position = models.IntegerField(null = True, default = 1)
-    product = models.ForeignKey('shopify_sync.Product')
+    product = models.ForeignKey('shopify_sync.Product', on_delete=models.CASCADE)
 
     class Meta:
         app_label = 'shopify_sync'

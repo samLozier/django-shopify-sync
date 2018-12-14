@@ -17,7 +17,7 @@ class LineItem(ShopifyResourceModel):
     fulfillment_status = models.CharField(max_length = 32, null = True)
     grams = models.DecimalField(max_digits = 10, decimal_places = 2)
     name = models.CharField(max_length = 256)
-    order = models.ForeignKey('shopify_sync.Order')
+    order = models.ForeignKey('shopify_sync.Order', on_delete=models.CASCADE)
     price = models.DecimalField(max_digits = 10, decimal_places = 2)
     product_id = models.BigIntegerField(null = True)
     product_exists = models.BooleanField(default = True)

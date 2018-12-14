@@ -1,6 +1,6 @@
-VERSION     = (0, 4, 1)
+VERSION     = (1, 0, 0)
 __version__ = '.'.join(map(str, VERSION))
-__author__  = 'Gavin Ballard'
+__author__  = 'David Burke'
 
 
 SHOPIFY_API_PAGE_LIMIT = 250

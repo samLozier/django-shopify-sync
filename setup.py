@@ -7,15 +7,15 @@ setup(
     version = version,
     description = 'A package for synchronising Django models with Shopify resources.',
     long_description = open('README.rst').read(),
-    author = 'Gavin Ballard',
-    author_email = 'gavin@gavinballard.com',
-    url = 'https://github.com/gavinballard/django-shopify-sync',
+    author = 'David Burke',
+    author_email = 'dburke@thelabnyc.com',
+    url = 'https://github.com/gavinballard/django-shopify-syn://gitlab.com/thelabnyc/django-shopify-sync',
     license = 'MIT',
 
     packages = find_packages(),
 
     install_requires = [
-        'django >=1.7',
+        'django >=1.11',
         'django-shopify-webhook >=0.2.6',
         'ShopifyAPI >=2.1.1',
         'jsonfield >=0.9.22',

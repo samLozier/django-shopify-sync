@@ -7,9 +7,16 @@
 Django Shopify Sync
 ===================
 
-Readme will be added here.
+This is a maintained fork of https://github.com/discolabs/django-shopify-sync
 
-WIP
+Installation
+============
+
+1. `pip install django-shopify-sync`
+2. Add `'shopify_sync',` to `INSTALLED_APPS`
+3. In create a new shopify_sync.Session in Django admin or shell. Enter your Shopify admin API token and site name. If your domain is http://my-site.myshopify.com your site name is my-site.
+
+This package supports Python 3.X and Django>=1.11
 
 How to use
 ==========

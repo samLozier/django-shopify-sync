@@ -67,7 +67,7 @@ class ChangedFields(object):
                             changed_fields.pop(name)
 
                     else:
-                        changed_fields[name] = copy(unicode(new))
+                        changed_fields[name] = copy(str(new))
 
             else:
                 super(ChangedFields, self).__setattr__(name, value)
@@ -575,7 +575,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
 class ShopifyResourceModel(ShopifyResourceModelBase):
     id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
-    session = models.ForeignKey(Session)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
 
     class Meta:
         abstract = True

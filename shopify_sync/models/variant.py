@@ -22,7 +22,7 @@ class Variant(ShopifyDatedResourceModel):
     option3 = models.CharField(max_length = 255, null = True)
     position = models.IntegerField(null = True, default = 1)
     price = models.DecimalField(max_digits = 10, decimal_places = 2)
-    product = models.ForeignKey('shopify_sync.Product')
+    product = models.ForeignKey('shopify_sync.Product', on_delete=models.CASCADE)
     requires_shipping = models.BooleanField(default = True)
     sku = models.CharField(max_length = 255, null = True)
     taxable = models.BooleanField(default = True)

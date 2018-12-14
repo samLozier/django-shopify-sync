@@ -11,7 +11,7 @@ class Image(ShopifyDatedResourceModel):
     parent_field = 'product_id'
 
     position = models.IntegerField(null = True, default = 1)
-    product = models.ForeignKey('shopify_sync.Product')
+    product = models.ForeignKey('shopify_sync.Product', on_delete=models.CASCADE)
     src = models.URLField()
 
     class Meta:
