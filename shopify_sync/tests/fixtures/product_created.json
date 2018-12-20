@@ -3,6 +3,7 @@
   "created_at":"2014-09-10T12:11:09-04:00",
   "handle":"my-test-product",
   "id":365103141,
+  "admin_graphql_api_id":"",
   "product_type":"Test Product Type",
   "published_at":"2014-09-10T12:09:00-04:00",
   "published_scope":"global",
