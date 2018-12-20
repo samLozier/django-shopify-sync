@@ -25,8 +25,9 @@ First we will get some of the products from shopify
 
 .. code:: python
 
-    from shopify_sync.models import Product
-    products = Product.objects.sync_all(query="For bar")
+    from shopify_sync.models import Product, Session
+    session = Session.objects.first()  # Assuming you have just one that you made previously
+    products = Product.objects.sync_all(session, query="For bar")
 
 `sync_all` passes all kwargs to the `shopify_resource.find` so we can
 then sync only the items that shopify returns from that search. Now we have all

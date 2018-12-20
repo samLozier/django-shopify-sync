@@ -576,6 +576,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 class ShopifyResourceModel(ShopifyResourceModelBase):
     id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
     session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    admin_graphql_api_id = models.CharField(max_length=80)
 
     class Meta:
         abstract = True
