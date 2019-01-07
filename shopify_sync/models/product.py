@@ -24,7 +24,7 @@ class Product(ShopifyDatedResourceModel):
         # 'metafields': Metafield,
     }
 
-    body_html = models.TextField()
+    body_html = models.TextField(default='')
     handle = models.CharField(max_length=255, db_index=True)
     product_type = models.CharField(max_length=255, db_index=True)
     published_at = models.DateTimeField(null=True)

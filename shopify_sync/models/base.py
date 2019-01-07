@@ -110,14 +110,16 @@ class ShopifyResourceManager(models.Manager):
             # We need to take the session form the parent
             shopify_resource.session = caller.session
             msg += " - called by parent resource '%s'" % str(caller)
-        log.debug(msg + ", site '%s'" % shopify_resource.session.site)
+        else:
+            shopify_resource.session = Session.objects.first()
 
+        log.debug(msg + ", site '%s'" % shopify_resource.session.site)
+        
         # Not sync the related fields if we are not doing the children
         if sync_children:
             related_field_names = self.model.get_related_field_names()
         else:
             related_field_names = []
-
         for related_field_name in related_field_names:
             try:
                 related_shopify_resource = getattr(shopify_resource,
