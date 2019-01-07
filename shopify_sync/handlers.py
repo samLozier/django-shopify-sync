@@ -28,6 +28,7 @@ def get_topic_action(topic):
     topic = topic.split('/')[1]
     mapping = {
         'create': 'sync_one',
+        'update': 'sync_one'
     }
     return mapping.get(topic, None)
 
