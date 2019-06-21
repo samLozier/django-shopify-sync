@@ -128,7 +128,12 @@ class ShopifyResourceManager(models.Manager):
                 # this means we are getting a shopify resource not a django model
                 related_shopify_resource = shopify_resource.attributes.get(related_field_name)
             if related_shopify_resource:
-                related_model = getattr(self.model, related_field_name).field.rel.to
+                field = getattr(self.model, related_field_name).field
+                # handle deprecated `rel`
+                if hasattr(field, 'rel') and hasattr(field.rel, 'to'):
+                    related_model = field.rel.to
+                else:
+                    related_model = field.remote_field.model
                 with activate_session(related_shopify_resource, session=shopify_resource.session) as related_shopify_resource:
                     related_model.objects.sync_one(related_shopify_resource,
                                                    caller=shopify_resource,
