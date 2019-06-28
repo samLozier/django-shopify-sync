@@ -1,18 +1,16 @@
 from __future__ import unicode_literals
 
 import shopify
+from django.apps import apps
 from django.db import models
 
-from .address import Address
 from .base import ShopifyDatedResourceModel
 
 
 class Customer(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Customer
-    related_fields = ['default_address']
 
     accepts_marketing = models.BooleanField(default = False)
-    default_address = models.ForeignKey(Address, null = True, related_name = 'default_address', on_delete=models.CASCADE)
     email = models.EmailField(null=True)
     first_name = models.CharField(max_length=128, null=True)
     multipass_identified = models.CharField(max_length=128, null = True)
@@ -31,12 +29,22 @@ class Customer(ShopifyDatedResourceModel):
 
     @property
     def addresses(self):
-        return Address.objects.filter(self.user, customer = self)
+        address = apps.get_model('shopify_sync', 'Address')
+        return address.objects.filter(customer=self)
+
+    @property
+    def default_address(self):
+        address = apps.get_model('shopify_sync', 'Address')
+        return address.objects.get(customer=self, default=True)
+
+    @classmethod
+    def related_models(cls):
+        return [apps.get_model('shopify_sync', 'Address')]
 
     @property
     def orders(self):
         from .order import Order
-        return Order.objects.filter(self.user, customer = self)
+        return Order.objects.filter(customer=self)
 
     def __str__(self):
         return "%s %s" % (self.first_name or "", self.last_name or "",)

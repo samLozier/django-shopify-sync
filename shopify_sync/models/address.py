@@ -1,14 +1,32 @@
 from __future__ import unicode_literals
 
-import shopify
-from django.db import models
 import uuid
 
-from .base import ShopifyResourceModelBase, ShopifyResourceModel
+import shopify
+from django.db import models
+
+from shopify_sync import SHOPIFY_API_PAGE_LIMIT
+from .base import ShopifyResourceModelBase
+from .customer import Customer
+
+
+class ShopifyAddress(shopify.base.ShopifyResource):
+    _prefix_source = "/customers/$customer_id/"
+    _plural = "addresses"
+    _singular = "address"
+
+    @classmethod
+    def count(cls, _options=None, **kwargs):
+        return SHOPIFY_API_PAGE_LIMIT
 
 
 class AddressBase(ShopifyResourceModelBase):
-    shopify_resource_class = shopify.resources.Address
+    shopify_resource_class = ShopifyAddress
+
+    related_fields = ['customer']
+    r_fields = {
+        'customer': Customer,
+    }
 
     address1 = models.CharField(max_length = 256, null=True)
     address2 = models.CharField(max_length = 256, null=True)
@@ -17,6 +35,7 @@ class AddressBase(ShopifyResourceModelBase):
     country = models.CharField(max_length = 256, null=True)
     country_code = models.CharField(max_length = 256, null=True)
     country_name = models.CharField(max_length = 256, null=True)
+    customer = models.ForeignKey(Customer, null=True, on_delete=models.CASCADE)
     default = models.BooleanField(default = False)
     first_name = models.CharField(max_length = 256, null = True)
     last_name = models.CharField(max_length = 256, null = True)
@@ -26,7 +45,16 @@ class AddressBase(ShopifyResourceModelBase):
     zip = models.CharField(max_length = 32, null = True)
 
     def __str__(self):
-        return "Address id=%s" % self.id
+        if self.customer:
+            return "Address id=%s, Customer id=%s" % (self.id, self.customer_id)
+        else:
+            return "Address id=%s" % self.id
+
+    @property
+    def _prefix_options(self):
+        return {
+            'customer_id': self.customer.id
+        }
 
     class Meta:
         # proxy = True
