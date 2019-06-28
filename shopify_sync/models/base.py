@@ -178,6 +178,18 @@ class ShopifyResourceManager(models.Manager):
                 child_shopify_resources = getattr(shopify_resource, child_field)
                 child_model.objects.sync_many(child_shopify_resources,
                                               parent_shopify_resource=shopify_resource)
+
+        # Synchronise all related models for this model, like all addresses for a customer
+        if hasattr(self.model, 'related_models'):
+            # kwargs might contain a session object, and it might conflict with the session argument to sync_all
+            if 'session' in kwargs:
+                kwargs.pop('session')
+            related_models = self.model.related_models()
+            for related_model in related_models:
+                related_model.objects.sync_all(shopify_resource.session,
+                                               caller=shopify_resource,
+                                               *args, **kwargs)
+
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
         print("Currently in sync", self.all())
@@ -231,6 +243,11 @@ class ShopifyResourceManager(models.Manager):
             # Get the pagination info to make the calls
             total_count = shopify_resource_class.count(**kwargs)
             current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
+
+            # add caller id, like customer_id, to create properly prefixed urls
+            if 'caller' in kwargs:
+                caller = kwargs['caller']
+                kwargs[caller._singular + '_id'] = caller.id
 
             while current_page <= total_pages:
                 # start looping the pages. Set the kwarg so that it is added to
@@ -381,6 +398,12 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         for related_field in cls.get_related_field_names():
             if hasattr(shopify_resource, related_field):
                 defaults[related_field + '_id'] = getattr(getattr(shopify_resource, related_field), 'id')
+            # sometimes related fields have an _id suffix, as in the case of `customer_id`
+            related_field = related_field + '_id'
+            if hasattr(shopify_resource, related_field):
+                # in this case, we have an id, so no need to get the `id` attribute as above
+                defaults[related_field] = getattr(shopify_resource, related_field)
+
         return defaults
 
     @classmethod
@@ -549,6 +572,11 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         for child_field, child_model in self.get_child_fields().items():
             if hasattr(self, child_field):
                 setattr(instance, child_field, [child.to_shopify_resource() for child in getattr(self, child_field)])
+
+        # Get parent models for this model, like customer for an address, and add them to prefix options
+        # so we can get a POST url like /customers/1319263371346/addresses/2195309133906.json
+        if hasattr(self, '_prefix_options'):
+            instance._prefix_options = self._prefix_options
 
         return instance
 
