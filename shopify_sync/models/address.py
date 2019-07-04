@@ -69,7 +69,7 @@ class Address(AddressBase):
         app_label = 'shopify_sync'
 
 
-class ShippingAddress(AddressBase):
+class OrderAddress(AddressBase):
     exclude_fields = ['session']
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
