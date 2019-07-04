@@ -16,16 +16,17 @@ from .address import ShippingAddress
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
-    related_fields = ['customer', 'shipping_address']
+    related_fields = ['customer', 'billing_address', 'shipping_address']
     r_fields = {
         'customer': Customer,
+        'billing_address': ShippingAddress,
         'shipping_address': ShippingAddress,
     }
     child_fields = {
         'line_items': LineItem,
     }
 
-    billing_address = JSONField(null=True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    billing_address = models.ForeignKey('shopify_sync.ShippingAddress', null=True, related_name='billing_address', on_delete=models.CASCADE)
     browser_ip = models.GenericIPAddressField(null = True)
     buyer_accepts_marketing = models.BooleanField(default = False)
     cancel_reason = models.CharField(max_length = 32, null = True)
