@@ -35,7 +35,10 @@ class Customer(ShopifyDatedResourceModel):
     @property
     def default_address(self):
         address = apps.get_model('shopify_sync', 'Address')
-        return address.objects.get(customer=self, default=True)
+        try:
+            return address.objects.get(customer=self, default=True)
+        except address.DoesNotExist:
+            return None
 
     @classmethod
     def related_models(cls):

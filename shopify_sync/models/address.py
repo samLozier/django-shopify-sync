@@ -11,6 +11,11 @@ from .customer import Customer
 
 
 class ShopifyAddress(shopify.base.ShopifyResource):
+    """
+    This is here mostly to properly create related urls like /customers/1319263371346/addresses/2195309133906.json
+    as Shopify doesn't let us read an address by ID without the customer prefix, and the implementation provided
+    by Shopify doesn't deal with this fact
+    """
     _prefix_source = "/customers/$customer_id/"
     _plural = "addresses"
     _singular = "address"
@@ -20,7 +25,7 @@ class ShopifyAddress(shopify.base.ShopifyResource):
         return SHOPIFY_API_PAGE_LIMIT
 
 
-class AddressBase(ShopifyResourceModelBase):
+class Address(ShopifyResourceModelBase):
     shopify_resource_class = ShopifyAddress
 
     related_fields = ['customer']
@@ -28,6 +33,7 @@ class AddressBase(ShopifyResourceModelBase):
         'customer': Customer,
     }
 
+    id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
     address1 = models.CharField(max_length = 256, null=True)
     address2 = models.CharField(max_length = 256, null=True)
     city = models.CharField(max_length = 256, null=True)
@@ -55,23 +61,6 @@ class AddressBase(ShopifyResourceModelBase):
         return {
             'customer_id': self.customer.id
         }
-
-    class Meta:
-        # proxy = True
-        abstract = True
-        app_label = 'shopify_sync'
-
-
-class Address(AddressBase):
-    id = models.BigIntegerField(primary_key=True)  # The numbers that shopify uses are too large
-
-    class Meta:
-        app_label = 'shopify_sync'
-
-
-class ShippingAddress(AddressBase):
-    exclude_fields = ['session']
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     class Meta:
         app_label = 'shopify_sync'

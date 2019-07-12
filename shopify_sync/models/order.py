@@ -1,25 +1,24 @@
 from __future__ import unicode_literals
 
+import json
+
 import shopify
 from django.db import models
 from jsonfield import JSONField
-import json
-
-from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from pyactiveresource.connection import ResourceInvalid
+
 from .base import ShopifyDatedResourceModel
-from .session import activate_session
-from .line_item import LineItem
 from .customer import Customer
-from .address import ShippingAddress
+from .line_item import LineItem
+from .session import activate_session
+from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
-    related_fields = ['customer', 'shipping_address']
+    related_fields = ['customer']
     r_fields = {
         'customer': Customer,
-        'shipping_address': ShippingAddress,
     }
     child_fields = {
         'line_items': LineItem,
@@ -49,7 +48,7 @@ class Order(ShopifyDatedResourceModel):
     processed_at = models.DateTimeField()
     processing_method = models.CharField(max_length = 32)
     referring_site = models.URLField(max_length = 2048, null = True)
-    shipping_address = models.ForeignKey('shopify_sync.ShippingAddress', null=True, related_name='shipping_address', on_delete=models.CASCADE)
+    shipping_address = JSONField(null=True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     shipping_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     source_name = models.CharField(max_length = 32)
     tax_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder}, null=True)
