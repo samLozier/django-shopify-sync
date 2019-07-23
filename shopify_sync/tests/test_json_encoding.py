@@ -13,7 +13,7 @@ class JSONEncodingTestCase(SyncTestCase):
 
         # Load JSON from the fixture file.
         fixture_json = self.read_fixture('product_created')
-
+        # FIXME Changing nothing
         # Create a product model by synchronising from a JSON fixture.
         fixture_shopify_resource = Product.shopify_resource_from_json(fixture_json)
         fixture_shopify_resource.session = session
