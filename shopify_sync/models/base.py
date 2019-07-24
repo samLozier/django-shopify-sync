@@ -176,6 +176,10 @@ class ShopifyResourceManager(models.Manager):
         for child_field, child_model in self.model.get_child_fields().items():
             if hasattr(shopify_resource, child_field):
                 child_shopify_resources = getattr(shopify_resource, child_field)
+                if child_field == 'metafields':
+                    with activate_session(shopify_resource,
+                                          session=shopify_resource.session) as shopify_resource:
+                        child_shopify_resources = shopify_resource.metafields()
                 child_model.objects.sync_many(child_shopify_resources,
                                               parent_shopify_resource=shopify_resource)
 
