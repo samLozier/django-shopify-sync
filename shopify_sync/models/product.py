@@ -21,7 +21,7 @@ class Product(ShopifyDatedResourceModel):
         'images': Image,
         'variants': Variant,
         'options': Option,
-        # 'metafields': Metafield,
+        'metafields': Metafield,
     }
 
     body_html = models.TextField(default='')
