@@ -38,6 +38,7 @@ class Order(ShopifyDatedResourceModel):
     email = models.EmailField()
     financial_status = models.CharField(max_length = 32)
     fulfillment_status = models.CharField(max_length = 32, null = True)
+    fulfillments = JSONField(default=empty_list, dump_kwargs={'cls': ShopifyDjangoJSONEncoder}, null=True)
     tags = models.TextField(null=True)
     landing_site = models.URLField(max_length=2048, null=True)
     name = models.CharField(max_length = 32)
@@ -66,10 +67,6 @@ class Order(ShopifyDatedResourceModel):
     def fix_ids(self):
         for line_item in self.line_items:
             line_item.fix_ids()
-
-    def _fulfillments(self):
-        return []
-    fulfillments = property(_fulfillments)
 
     def _line_items(self):
         return LineItem.objects.filter(order=self)
