@@ -312,7 +312,7 @@ class ShopifyResourceManager(models.Manager):
             # Save the Shopify resource.
             try:
                 successful = shopify_resource.save()
-            except ResourceNotFound:
+            except ResourceNotFound as e:
                 # When this fails, that means that there is no resource in shopify,
                 # then if we have a create kwarg, then we will create the resource,
                 # other wise we will just throw the error
@@ -323,12 +323,9 @@ class ShopifyResourceManager(models.Manager):
                         shopify_resource = instance.clean_for_post(shopify_resource)
                         successful = shopify_resource.save()
                 else:
-                    # TODO: Should have this use the ReasourceNotFound exception,
-                    # but that requires a object with a msg attr
-                    log.warning("Resource '%s' could not be found!" % shopify_resource)
-                    raise Exception("Could not find the resource '%s', if you wish to "
-                                    "create the resource if it does not exist, use the "
-                                    "kwarg 'create=True'." % shopify_resource)
+                    log.warning("Resource '%s' could not be found!"
+                                "Use the kwarg 'create=True' to create." % shopify_resource)
+                    raise e
 
         if not successful:
             message = '[Shopify API Errors]: {0}'.format(
