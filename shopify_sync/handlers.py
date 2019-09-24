@@ -28,7 +28,8 @@ def get_topic_action(topic):
     topic = topic.split('/')[1]
     mapping = {
         'create': 'sync_one',
-        'update': 'sync_one'
+        'update': 'sync_one',
+        'fulfilled': 'sync_one',
     }
     return mapping.get(topic, None)
 
@@ -40,13 +41,11 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
 
     # Get the model related to the incoming topic and data.
     model = get_topic_model(topic, data)
-    if model is None:
-        assert "topic model does not exist"
+    assert model is not None, "topic model does not exist"
 
     # Get the action related to the incoming topic.
     model_action = get_topic_action(topic)
-    if model_action is None:
-        assert "topic action does not exist"
+    assert model_action is not None, "topic action does not exist"
 
     # Convert the incoming data to the relevant Shopify resource.
 
