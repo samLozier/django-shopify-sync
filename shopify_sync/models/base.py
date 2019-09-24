@@ -114,7 +114,7 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource.session = Session.objects.first()
 
         log.debug(msg + ", site '%s'" % shopify_resource.session.site)
-        
+
         # Not sync the related fields if we are not doing the children
         if sync_children:
             related_field_names = self.model.get_related_field_names()
@@ -211,12 +211,15 @@ class ShopifyResourceManager(models.Manager):
         """
         instances = []
         for shopify_resource in shopify_resources:
-            # If needed, ensure the parent ID is stored on the resource before synchronising it.
-            if self.model.parent_field is not None and parent_shopify_resource is not None:
-                setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
-            instance = self.sync_one(shopify_resource,
-                                     caller=parent_shopify_resource)
-            instances.append(instance)
+            try:
+                # If needed, ensure the parent ID is stored on the resource before synchronising it.
+                if self.model.parent_field is not None and parent_shopify_resource is not None:
+                    setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
+                instance = self.sync_one(shopify_resource,
+                                         caller=parent_shopify_resource)
+                instances.append(instance)
+            except Exception as e:
+                log.error(f'Exception during sync_many of {shopify_resource}: {e}')
         return instances
 
     def sync_all(self, session, **kwargs):
