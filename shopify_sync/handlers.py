@@ -29,6 +29,7 @@ def get_topic_action(topic):
     mapping = {
         'create': 'sync_one',
         'update': 'sync_one',
+        'updated': 'sync_one',
         'fulfilled': 'sync_one',
     }
     return mapping.get(topic, None)
