@@ -59,7 +59,6 @@ def activate_session(obj, session=None):
         else:
             # Otherwise we have to try find the session the session from the
             # resouce insides.
-            print("Intorspection to find the session!", shopify_resource.__dict__)
             site = shopify_resource.connection._parse_site(obj.__class__.site)
             if site:
                 # We can't do anything as there is no site given
