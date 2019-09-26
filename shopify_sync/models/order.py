@@ -95,14 +95,12 @@ class Order(ShopifyDatedResourceModel):
             try:
                 response = shopify_resource.post(URL, body=body)
             except ResourceInvalid as response:
-                print("sent data %s" % body)
                 return response
 
         body = json.loads(response.body)
         errors = data.pop('errors', None)
         if errors:
             return errors
-        print(body)
         return body
 
     def refund_from_transaction(self, data):

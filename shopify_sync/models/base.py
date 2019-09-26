@@ -156,14 +156,8 @@ class ShopifyResourceManager(models.Manager):
                 defaults=defaults,
             )
         except Exception as e:
-            from pprint import pprint
-            import traceback
-            log.error("Sync failed, dumping data!")
-            pprint("Resource:")
-            pprint(shopify_resource.attributes)
-            pprint("Defaults:")
-            pprint(defaults)
-            traceback.print_exc()
+            log.error(f'Sync failed for resource: {shopify_resource} and defaults: {defaults} exception: {e}')
+            print('x', end='')
             raise e
 
         # don't sync children if set to False
@@ -196,7 +190,9 @@ class ShopifyResourceManager(models.Manager):
 
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
-        print("Currently in sync", self.all())
+
+        # show sync progress
+        print('.', end='')
 
         return instance
 
@@ -220,6 +216,7 @@ class ShopifyResourceManager(models.Manager):
                 instances.append(instance)
             except Exception as e:
                 log.error(f'Exception during sync_many of {shopify_resource}: {e}')
+
         return instances
 
     def sync_all(self, session, **kwargs):
@@ -234,7 +231,13 @@ class ShopifyResourceManager(models.Manager):
         # need to make sure that we get a session to use
 
         shopify_resources = self.fetch_all(session=session, **kwargs)
-        return self.sync_many(shopify_resources)
+        instances = self.sync_many(shopify_resources)
+
+        # final newline after sync progress
+        if 'caller' not in kwargs:
+            print('')
+
+        return instances
 
     def fetch_all(self, session, **kwargs):
         """
@@ -544,7 +547,6 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
                 # Sadly this has to be a county shopify knows
                 shopify_resource.attributes['billing_address']['country'] = 'Azerbaijan'
 
-        print('cleanded attr', shopify_resource.attributes)
         return shopify_resource
 
     def to_shopify_resource(self):
