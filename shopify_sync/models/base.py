@@ -82,7 +82,7 @@ class ShopifyResourceManager(models.Manager):
     """
 
     def sync_one(self, obj, caller=None, # noqa C901
-                 sync_children=True, *args, **kwargs):
+                 sync_children=True, sync_meta=False, *args, **kwargs):
         """
         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
@@ -91,6 +91,7 @@ class ShopifyResourceManager(models.Manager):
         :param obj:
         :param caller:
         :param sync_children:
+        :param sync_meta: should sync Metafields
         :param args:
         :param kwargs:
         :return:
@@ -137,6 +138,7 @@ class ShopifyResourceManager(models.Manager):
                 with activate_session(related_shopify_resource, session=shopify_resource.session) as related_shopify_resource:
                     related_model.objects.sync_one(related_shopify_resource,
                                                    caller=shopify_resource,
+                                                   sync_meta=sync_meta,
                                                    *args, **kwargs)
 
         defaults = self.model.get_defaults(shopify_resource)
@@ -171,11 +173,16 @@ class ShopifyResourceManager(models.Manager):
             if hasattr(shopify_resource, child_field):
                 child_shopify_resources = getattr(shopify_resource, child_field)
                 if child_field == 'metafields':
-                    with activate_session(shopify_resource,
-                                          session=shopify_resource.session) as shopify_resource:
-                        child_shopify_resources = shopify_resource.metafields()
+                    if sync_meta:
+                        with activate_session(shopify_resource,
+                                              session=shopify_resource.session) as shopify_resource:
+                            child_shopify_resources = shopify_resource.metafields()
+                    else:
+                        # skip metafields child_field
+                        continue
                 child_model.objects.sync_many(child_shopify_resources,
-                                              parent_shopify_resource=shopify_resource)
+                                              parent_shopify_resource=shopify_resource,
+                                              sync_meta=sync_meta)
 
         # Synchronise all related models for this model, like all addresses for a customer
         if hasattr(self.model, 'related_models'):
@@ -186,6 +193,7 @@ class ShopifyResourceManager(models.Manager):
             for related_model in related_models:
                 related_model.objects.sync_all(shopify_resource.session,
                                                caller=shopify_resource,
+                                               sync_meta=sync_meta,
                                                *args, **kwargs)
 
         _new = "Created" if created else "Updated"
@@ -196,13 +204,14 @@ class ShopifyResourceManager(models.Manager):
 
         return instance
 
-    def sync_many(self, shopify_resources, parent_shopify_resource=None):
+    def sync_many(self, shopify_resources, parent_shopify_resource=None, sync_meta=False):
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
 
         :param shopify_resources:
         :param parent_shopify_resource:
+        :param sync_meta: should sync Metafields
         :return:
         """
         instances = []
@@ -212,26 +221,28 @@ class ShopifyResourceManager(models.Manager):
                 if self.model.parent_field is not None and parent_shopify_resource is not None:
                     setattr(shopify_resource, self.model.parent_field, getattr(parent_shopify_resource, 'id'))
                 instance = self.sync_one(shopify_resource,
-                                         caller=parent_shopify_resource)
+                                         caller=parent_shopify_resource,
+                                         sync_meta=sync_meta)
                 instances.append(instance)
             except Exception as e:
                 log.error(f'Exception during sync_many of {shopify_resource}: {e}')
 
         return instances
 
-    def sync_all(self, session, **kwargs):
+    def sync_all(self, session, sync_meta=False, **kwargs):
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
 
         :param session:
+        :param sync_meta: should sync Metafields
         :param kwargs:
         :return:
         """
         # need to make sure that we get a session to use
 
         shopify_resources = self.fetch_all(session=session, **kwargs)
-        instances = self.sync_many(shopify_resources)
+        instances = self.sync_many(shopify_resources, sync_meta=sync_meta)
 
         # final newline after sync progress
         if 'caller' not in kwargs:
@@ -592,10 +603,10 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         """
         return self.to_shopify_resource().attributes
 
-    def sync(self):
+    def sync(self, sync_meta=False):
         shopify_resource = self.to_shopify_resource()
         shopify_resource.reload()
-        self.manager.sync_one(shopify_resource)
+        self.manager.sync_one(shopify_resource, sync_meta=sync_meta)
         self.refresh_from_db()
 
     def save(self, push=False, *args, **kwargs):
