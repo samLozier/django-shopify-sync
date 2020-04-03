@@ -16,20 +16,6 @@ from .session import Session, ShopifyResource, ShopifySession, activate_session
 log = logging.getLogger(__name__)
 
 
-def get_shopify_pagination(total_count):
-    """
-    Get the appropriate pagination to use with Shopify's API
-    given the total number of records.
-
-    :param total_count: The number of resources that you are trying to get.
-    :return:
-    :rtype: tuple with the starting page, last page and the page limit.
-    """
-    last_page = (int(math.ceil(float(total_count) /
-                 float(SHOPIFY_API_PAGE_LIMIT))))
-    return (1, last_page, SHOPIFY_API_PAGE_LIMIT,)
-
-
 class ChangedFields(object):
     """
     Keeps track of fields that have changed since model instantiation, and on
@@ -260,31 +246,26 @@ class ShopifyResourceManager(models.Manager):
         """
         # Get the class and make sure we have a session that we can use
         shopify_class = self.model.shopify_resource_class()
-        with activate_session(shopify_class, session=session) as shopify_resource_class:
-            # Get the pagination info to make the calls
-            total_count = shopify_resource_class.count(**kwargs)
-            current_page, total_pages, kwargs['limit'] = get_shopify_pagination(total_count)
+        
+        # add caller id, like customer_id, to create properly prefixed urls
+        if 'caller' in kwargs:
+            caller = kwargs['caller']
+            kwargs[caller._singular + '_id'] = caller.id
+        
+        if not 'limit' in kwargs:
+            kwargs['limit'] = SHOPIFY_API_PAGE_LIMIT
+        
+        page = None
+        while not page or page.has_next_page():
+            with activate_session(shopify_class, session=session) as fetcher:
+                if page:
+                    page = page.next_page()
+                else:
+                    page = fetcher.find(**kwargs)
 
-            # add caller id, like customer_id, to create properly prefixed urls
-            if 'caller' in kwargs:
-                caller = kwargs['caller']
-                kwargs[caller._singular + '_id'] = caller.id
-
-            while current_page <= total_pages:
-                # start looping the pages. Set the kwarg so that it is added to
-                # any special query that we had
-                kwargs['page'] = current_page
-                with activate_session(shopify_class, session=session) as shopify_resource_class:
-                    # Not 100% sure why this is needed. I am assuming that as
-                    # we have another 'with' that is cleared on the sync_one,
-                    # that this will also kill our sesion here
-                    shopify_resources = shopify_resource_class.find(**kwargs)
-                # Loop through all the resources, set the sessions and then
-                # yeild for sync_one to handle
-                for shopify_resource in shopify_resources:
+                for shopify_resource in page:
                     shopify_resource.session = session
                     yield shopify_resource
-                current_page += 1
 
     def push_one(self, instance, force=False, create=False, *args, **kwargs):
         """

@@ -13,7 +13,7 @@ class Session(models.Model):
         app_label = 'shopify_sync'
 
     def to_shopify(self):
-        shopify_session = ShopifySession(self.site, '2019-04', self.token)
+        shopify_session = ShopifySession(self.site, '2020-01', self.token)
         # pyactiveresource has a defined __setattr__
         shopify_session.__dict__['model'] = self
         shopify_session.__dict__['session'] = shopify_session

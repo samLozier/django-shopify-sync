@@ -1,4 +1,4 @@
 django>=2.2
 django-shopify-webhook >=0.2.6
-ShopifyAPI >=5.0.1
+ShopifyAPI >=7.0.2
 jsonfield >=0.9.22
