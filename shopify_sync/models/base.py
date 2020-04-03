@@ -252,8 +252,7 @@ class ShopifyResourceManager(models.Manager):
             caller = kwargs['caller']
             kwargs[caller._singular + '_id'] = caller.id
         
-        if not 'limit' in kwargs:
-            kwargs['limit'] = SHOPIFY_API_PAGE_LIMIT
+        kwargs['limit'] = SHOPIFY_API_PAGE_LIMIT
         
         page = None
         # Before we've fetched the first page, it fetches the first page.
