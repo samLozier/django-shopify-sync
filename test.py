@@ -34,7 +34,7 @@ if __name__ == '__main__':
         ROOT_URLCONF = 'shopify_sync.tests.urls',
         USE_TZ = True,
         SHOPIFY_APP_API_SECRET = 'hush',
-        log = log,
+        LOG = log,
         LOGGING = {
 	    'version': 1,
 	    'filters': {
