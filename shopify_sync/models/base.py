@@ -252,7 +252,7 @@ class ShopifyResourceManager(models.Manager):
             caller = kwargs['caller']
             kwargs[caller._singular + '_id'] = caller.id
         
-        kwargs['limit'] = SHOPIFY_API_PAGE_LIMIT
+        limit = kwargs.pop('limit', SHOPIFY_API_PAGE_LIMIT)
         
         page = None
         # Before we've fetched the first page, it fetches the first page.
@@ -264,7 +264,7 @@ class ShopifyResourceManager(models.Manager):
                 if page:
                     page = page.next_page()
                 else:
-                    page = fetcher.find(**kwargs)
+                    page = fetcher.find(limit=limit, **kwargs)
 
                 for shopify_resource in page:
                     shopify_resource.session = session
