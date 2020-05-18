@@ -17,12 +17,40 @@ class PaginationCase(TestCase):
         manager = ShopifyResourceManager()
         manager.model = FooModel
         session = Session.objects.create(token="test", site="test")
+
         self.fake(
-            'shop',
-            url='https://test.myshopify.com/admin/shop.json',
+            'pagination_1',
+            url='https://test.myshopify.com/admin/api/2020-01/shopify_foos.json?limit=2',
             method='GET',
-            body='lol!',
-            headers={'Authorization': u'Basic dXNlcjpwYXNz'}
+            headers={'X-shopify-access-token': 'test'},
+            body='{"products": [{ "id": 1 },{ "id": 2 }]}',
+            response_headers={
+                'Link': '<https://test.myshopify.com/admin/api/2020-01/shopify_foos.json?limit=2&page_info=abcde1>; rel="next"'
+            }
         )
+
+        self.fake(
+            'pagination_2',
+            url='https://test.myshopify.com/admin/api/2020-01/shopify_foos.json?limit=2&page_info=abcde1',
+            method='GET',
+            headers={'X-shopify-access-token': 'test'},
+            body='{"products": [{ "id": 3 },{ "id": 4 }]}',
+            response_headers={
+                'Link': '<https://test.myshopify.com/admin/api/2020-01/shopify_foos.json?limit=2&page_info=abcde2>; rel="next"'
+            }
+        )
+
+        self.fake(
+            'pagination_3',
+            url='https://test.myshopify.com/admin/api/2020-01/shopify_foos.json?limit=2&page_info=abcde2',
+            method='GET',
+            headers={'X-shopify-access-token': 'test'},
+            body='{"products": [{ "id": 5 }]}',
+        )
+ 
+        count = 0
+
         for thing in manager.fetch_all(session, limit=2):
-            print(thing)
+            count += 1
+        
+        self.assertEqual(count, 5)
