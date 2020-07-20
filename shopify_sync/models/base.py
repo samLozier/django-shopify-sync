@@ -257,7 +257,7 @@ class ShopifyResourceManager(models.Manager):
         page = None
         # Before we've fetched the first page, it fetches the first page.
         # After that it keeps fetching until there is no next page
-        while not page or page.has_next_page():
+        while page is None or page.has_next_page():
             # The session does need to be activated before EVERY call
             # or else page.next_page() will error
             with activate_session(shopify_class, session=session) as fetcher:

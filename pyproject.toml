@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "django-shopify-sync"
+version = "2.2.9"
+description = "A package for synchronising Django models with Shopify resources."
+authors = ["David Burke <dburke@thelabnyc.com>"]
+license = "MIT"
+homepage = "https://gitlab.com/thelabnyc/django-shopify-sync"
+repository = "https://gitlab.com/thelabnyc/django-shopify-sync"
+keywords = ["django", "shopify"]
+classifiers=[]
+
+
+[tool.poetry.dependencies]
+python = "^3.7"
+django = ">=2.2"
+django-shopify-webhook = ">=0.2.6"
+ShopifyAPI = ">=7.0.2"
+jsonfield = ">=0.9.22"
+
+[tool.poetry.dev-dependencies]
+python_dateutil = ">=2.6.0"
+model-mommy = ">=1.3.2"
+psycopg2-binary = "^2.8.5"
+ipdb = "^0.13.3"
+
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
