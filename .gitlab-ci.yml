@@ -1,8 +1,34 @@
+image: python:3.7
+
+variables:
+  POETRY_VIRTUALENVS_CREATE: "false"
+  PIP_DISABLE_PIP_VERSION_CHECK: "on"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - pip install poetry
+  - poetry install
+
 test:
-  image: python:3.7
+  stage: test
   services:
     - name: postgres:10
       alias: db
   script:
-    - pip install -r requirements-dev.txt
     - python test.py
+
+deploy:
+  stage: deploy
+  script:
+    - poetry config pypi-token.pypi $PYPI_API_TOKEN
+    - poetry publish --build
+  only:
+    - tags
+    - /^v*$/
+  artifacts:
+    paths:
+      - dist/
