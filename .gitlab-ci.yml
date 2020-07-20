@@ -28,7 +28,6 @@ deploy:
     - poetry publish --build
   only:
     - tags
-    - /^v*$/
   artifacts:
     paths:
       - dist/
