@@ -24,7 +24,7 @@ test:
 deploy:
   stage: deploy
   script:
-    - poetry config pypi-token.pypi $PYPI_API_TOKEN
+    - poetry config pypi-token.pypi $POETRY_PYPI_API_TOKEN
     - poetry publish --build
   only:
     - tags
