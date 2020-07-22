@@ -10,7 +10,7 @@ keywords = ["django", "shopify"]
 classifiers=[]
 
 packages = [
-  {include = "django_shopify_sync"}
+  {include = "shopify_sync"}
 ]
 
 [tool.poetry.dependencies]
