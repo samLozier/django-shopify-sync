@@ -9,6 +9,9 @@ repository = "https://gitlab.com/thelabnyc/django-shopify-sync"
 keywords = ["django", "shopify"]
 classifiers=[]
 
+packages = [
+  {include = "django_shopify_sync"}
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
