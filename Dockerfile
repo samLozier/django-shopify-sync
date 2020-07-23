@@ -11,7 +11,7 @@ WORKDIR /code
 
 RUN pip install "poetry==$POETRY_VERSION"
 COPY poetry.lock pyproject.toml /code/
-RUN poetry install --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi --no-root
 
 
 ADD . /code/
