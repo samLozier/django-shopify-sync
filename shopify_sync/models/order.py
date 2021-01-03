@@ -9,22 +9,22 @@ from pyactiveresource.connection import ResourceInvalid
 
 from .base import ShopifyDatedResourceModel
 from .customer import Customer
-from .line_item import LineItem
-from .session import activate_session
-from ..encoders import ShopifyDjangoJSONEncoder, empty_list
+from .address import OrderAddress
 
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
-    related_fields = ['customer']
+    related_fields = ['customer', 'billing_address', 'shipping_address']
     r_fields = {
         'customer': Customer,
+        'billing_address': OrderAddress,
+        'shipping_address': OrderAddress,
     }
     child_fields = {
         'line_items': LineItem,
     }
 
-    billing_address = JSONField(null=True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    billing_address = models.ForeignKey('shopify_sync.OrderAddress', null=True, related_name='billing_address', on_delete=models.CASCADE)
     browser_ip = models.GenericIPAddressField(null = True)
     buyer_accepts_marketing = models.BooleanField(default = False)
     cancel_reason = models.CharField(max_length = 32, null = True)
@@ -48,7 +48,7 @@ class Order(ShopifyDatedResourceModel):
     processed_at = models.DateTimeField()
     processing_method = models.CharField(max_length = 32)
     referring_site = models.URLField(max_length = 2048, null = True)
-    shipping_address = JSONField(null=True, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
+    shipping_address = models.ForeignKey('shopify_sync.OrderAddress', null=True, related_name='shipping_address', on_delete=models.CASCADE)
     shipping_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     source_name = models.CharField(max_length = 32)
     tax_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder}, null=True)
