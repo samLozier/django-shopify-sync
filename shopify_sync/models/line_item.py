@@ -24,7 +24,7 @@ class LineItem(ShopifyResourceModel):
     properties = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})
     quantity = models.IntegerField()
     requires_shipping = models.BooleanField(default = True)
-    sku = models.CharField(max_length = 256)
+    sku = models.CharField(max_length = 256, null=True)
     gift_card = models.BooleanField(default = False)
     taxable = models.BooleanField(default = False)
     tax_lines = JSONField(default = empty_list, dump_kwargs = {'cls': ShopifyDjangoJSONEncoder})

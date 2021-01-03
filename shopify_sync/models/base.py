@@ -8,6 +8,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, utils
 from django.db.models.fields.related import ForeignObjectRel
 from pyactiveresource.connection import ResourceNotFound
+import traceback
 
 from .. import SHOPIFY_API_PAGE_LIMIT
 
@@ -98,7 +99,8 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource.session = caller.session
             msg += " - called by parent resource '%s'" % str(caller)
         else:
-            shopify_resource.session = Session.objects.first()
+            # shopify_resource.session = Session.objects.first() # original
+            shopify_resource.session = obj.session
 
         log.debug(msg + ", site '%s'" % shopify_resource.session.site)
 
@@ -212,6 +214,7 @@ class ShopifyResourceManager(models.Manager):
                 instances.append(instance)
             except Exception as e:
                 log.error(f'Exception during sync_many of {shopify_resource}: {e}')
+                print(traceback.format_exc())
 
         return instances
 

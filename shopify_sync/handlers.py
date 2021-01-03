@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 
 def get_topic_model(topic, data):
     from .models import (CustomCollection, Customer, Order, Product, Shop,
-                         SmartCollection, Metafield)
+                         SmartCollection, Metafield, InventoryItem, InventoryLevel)
 
     """
     Return the model related to the given topic, if it's a valid topic
@@ -20,6 +20,8 @@ def get_topic_model(topic, data):
         'orders': Order,
         'metafields': Metafield,
         'shop': Shop,
+        'inventory_items': InventoryItem, 
+        'inventory_levels': InventoryLevel
     }
     return mapping.get(topic, None)
 
@@ -41,6 +43,7 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     """
 
     # Get the model related to the incoming topic and data.
+
     model = get_topic_model(topic, data)
     assert model is not None, "topic model does not exist"
 
@@ -55,6 +58,7 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
     shopify_resource = model.shopify_resource_from_json(data)
 
     # Execute the desired action.
+
     if model_action == 'sync_one':
         model.objects.sync_one(shopify_resource)
     assert model_action == 'sync_one', "The model action has to be sync_one"

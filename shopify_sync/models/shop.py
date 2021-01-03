@@ -51,22 +51,23 @@ class Shop(ShopifyResourceModel):
     money_with_currency_format = models.CharField(max_length = 32, null = True)
     money_with_currency_in_emails_format = models.CharField(max_length = 32, null = True)
 
-    county_taxes = models.NullBooleanField(default = False, null = True)
-    tax_shipping = models.NullBooleanField(default = False, null = True)
-    taxes_included = models.NullBooleanField(default = False, null = True)
+    # county_taxes = models.NullBooleanField(default = False, null = True)
+    county_taxes = models.BooleanField(default=False, null=True)
+    tax_shipping = models.BooleanField(default = False, null = True)
+    taxes_included = models.BooleanField(default = False, null = True)
 
     google_apps_domain = models.CharField(max_length = 255, null = True)
-    google_apps_login_enabled = models.NullBooleanField(default = False, null = True)
+    google_apps_login_enabled = models.BooleanField(default = False, null = True)
 
     plan_name = models.CharField(max_length = 32, null = True)
     plan_display_name = models.CharField(max_length = 32, null = True)
-    password_enabled = models.NullBooleanField(default = False, null = True)
+    password_enabled = models.BooleanField(default = False, null = True)
 
     # Undocumented properties
     primary_location_id = models.IntegerField(null = True)
-    public = models.NullBooleanField(default = True, null = True)
-    eligible_for_payments = models.NullBooleanField(default = True, null = True)
-    requires_extra_payments_agreement = models.NullBooleanField(default = True, null = True)
+    public = models.BooleanField(default = True, null = True)
+    eligible_for_payments = models.BooleanField(default = True, null = True)
+    requires_extra_payments_agreement = models.BooleanField(default = True, null = True)
     source = models.CharField(max_length = 32, null = True)
 
     class Meta:

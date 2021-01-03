@@ -12,7 +12,7 @@ class Image(ShopifyDatedResourceModel):
 
     position = models.IntegerField(null = True, default = 1)
     product = models.ForeignKey('shopify_sync.Product', on_delete=models.CASCADE)
-    src = models.URLField()
+    src = models.URLField(max_length=500)
 
     class Meta:
         app_label = 'shopify_sync'

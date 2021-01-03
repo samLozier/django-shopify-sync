@@ -17,3 +17,6 @@ from .shop import Shop
 from .smart_collection import SmartCollection
 from .variant import Variant
 from .webhook import Webhook
+from .inventoryitem import InventoryItem
+from .inventorylevel import InventoryLevel
+from .location import Location
