@@ -5,6 +5,7 @@ from shopify_sync.models.__init__ import (Address, CarrierService, Collect,
                                           LineItem, Metafield, Option, Order,
                                           Product, ScriptTag, Session, Shop,
                                           SmartCollection, Variant, Webhook)
+from shopify_sync.models.address import OrderAddress
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -23,6 +24,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Address)
+admin.site.register(OrderAddress)
 admin.site.register(CarrierService)
 admin.site.register(Collect)
 admin.site.register(CustomCollection)
