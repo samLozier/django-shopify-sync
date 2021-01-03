@@ -32,13 +32,19 @@ The two related apps are:
 Installation
 ============
 
-Pip install points to this repo: https://gitlab.com/thelabnyc/django-shopify-sync not the one you're reading now. 
+Pip install points to this repo: https://gitlab.com/thelabnyc/django-shopify-sync not the one you're reading now.
+
 1. Currently you'll need to copy the code into your own project to use it. 
+
 2. Add `'shopify_sync',` to `INSTALLED_APPS`
+
 3. Create a new `shopify_sync.Session` in Django admin or shell, enter your Shopify admin API token and site name.
 
+
 Confused about where to find this session info? I was initially as well, there are two easy steps:
+
 1. Use the shopify_python_api package (or any other method) to get a token https://github.com/Shopify/shopify_python_api#public-and-custom-apps
+
 2. Save the "site" and "token" data for your sesson to the "Sesson" model that's defined in this app 
 
 
