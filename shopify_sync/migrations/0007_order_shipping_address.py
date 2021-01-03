@@ -7,13 +7,13 @@ import jsonfield.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0006_auto_20190712_0702'),
+        ("shopify_sync", "0006_auto_20190712_0702"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='shipping_address',
+            model_name="order",
+            name="shipping_address",
             field=jsonfield.fields.JSONField(null=True),
         ),
     ]

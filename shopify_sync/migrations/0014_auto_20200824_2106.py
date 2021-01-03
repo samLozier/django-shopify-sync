@@ -6,43 +6,43 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0013_auto_20200824_2105'),
+        ("shopify_sync", "0013_auto_20200824_2105"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='shop',
-            name='eligible_for_payments',
+            model_name="shop",
+            name="eligible_for_payments",
             field=models.BooleanField(default=True, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='google_apps_login_enabled',
+            model_name="shop",
+            name="google_apps_login_enabled",
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='password_enabled',
+            model_name="shop",
+            name="password_enabled",
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='public',
+            model_name="shop",
+            name="public",
             field=models.BooleanField(default=True, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='requires_extra_payments_agreement',
+            model_name="shop",
+            name="requires_extra_payments_agreement",
             field=models.BooleanField(default=True, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='tax_shipping',
+            model_name="shop",
+            name="tax_shipping",
             field=models.BooleanField(default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='shop',
-            name='taxes_included',
+            model_name="shop",
+            name="taxes_included",
             field=models.BooleanField(default=False, null=True),
         ),
     ]

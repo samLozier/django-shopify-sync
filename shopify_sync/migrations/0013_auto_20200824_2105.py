@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0012_auto_20200821_2221'),
+        ("shopify_sync", "0012_auto_20200821_2221"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='shop',
-            name='county_taxes',
+            model_name="shop",
+            name="county_taxes",
             field=models.BooleanField(default=False, null=True),
         ),
     ]

@@ -6,13 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0035_auto_20201223_0937'),
+        ("shopify_sync", "0035_auto_20201223_0937"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='variant',
-            old_name='inventoryitem',
-            new_name='inventory_item_id',
+            model_name="variant",
+            old_name="inventoryitem",
+            new_name="inventory_item_id",
         ),
     ]

@@ -6,13 +6,11 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0024_auto_20200901_2106'),
+        ("shopify_sync", "0024_auto_20200901_2106"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='image',
-            name='src',
-            field=models.URLField(max_length=500),
+            model_name="image", name="src", field=models.URLField(max_length=500),
         ),
     ]

@@ -7,13 +7,15 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0038_remove_variant_inventory_item'),
+        ("shopify_sync", "0038_remove_variant_inventory_item"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variant',
-            name='inventory_item_id',
-            field=models.BigIntegerField(null=True, unique=True, verbose_name=django.db.models.deletion.SET_NULL),
+            model_name="variant",
+            name="inventory_item_id",
+            field=models.BigIntegerField(
+                null=True, unique=True, verbose_name=django.db.models.deletion.SET_NULL
+            ),
         ),
     ]

@@ -18,24 +18,24 @@ log = logging.getLogger(__name__)
 class Product(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Product
     child_fields = {
-        'images': Image,
-        'variants': Variant,
-        'options': Option,
-        'metafields': Metafield,
+        "images": Image,
+        "variants": Variant,
+        "options": Option,
+        "metafields": Metafield,
     }
 
-    body_html = models.TextField(default='', null=True)
+    body_html = models.TextField(default="", null=True)
     handle = models.CharField(max_length=255, db_index=True)
     product_type = models.CharField(max_length=255, db_index=True)
     published_at = models.DateTimeField(null=True)
-    published_scope = models.CharField(max_length=64, default='global')
+    published_scope = models.CharField(max_length=64, default="global")
     tags = models.CharField(max_length=255, blank=True)
     template_suffix = models.CharField(max_length=255, null=True)
     title = models.CharField(max_length=255, db_index=True)
     vendor = models.CharField(max_length=255, db_index=True, null=True)
 
     class Meta:
-        app_label = 'shopify_sync'
+        app_label = "shopify_sync"
 
     @property
     def images(self):
@@ -70,14 +70,15 @@ class Product(ShopifyDatedResourceModel):
     def _get_tag_list(self):
         # Tags are comma-space delimited.
         # https://help.shopify.com/api/reference/product#tags-property
-        return self.tags.split(', ') if self.tags else []
+        return self.tags.split(", ") if self.tags else []
 
     def _set_tag_list(self, tag_list):
         # we need to make sure tag_list is a list, if it is not we will make it
         # one and we will use join to save to tags. The idea is that tag_list
         # will match self.tags at all time. DOESN'T AUTO SAVE
-        self.tags = ', '.join(tag_list if isinstance(tag_list, list) else [tag_list])
+        self.tags = ", ".join(tag_list if isinstance(tag_list, list) else [tag_list])
         return self.tags
+
     tag_list = property(_get_tag_list, _set_tag_list)
 
     def add_tag(self, tag):
@@ -97,9 +98,10 @@ class Product(ShopifyDatedResourceModel):
             metafields = shopify_resource.metafields() if sync_meta else []
             for metafield in metafields:
                 defaults = metafield.attributes
-                defaults.update({'product': self, 'session': self.session})
-                instance, created = Metafield.objects.update_or_create(id=defaults['id'],
-                                                                       defaults=defaults)
+                defaults.update({"product": self, "session": self.session})
+                instance, created = Metafield.objects.update_or_create(
+                    id=defaults["id"], defaults=defaults
+                )
                 _new = "Created" if created else "Updated"
                 log.debug("%s metafield for product %s <%s>" % (_new, self, instance))
         super(Product, self).save(*args, **kwargs)

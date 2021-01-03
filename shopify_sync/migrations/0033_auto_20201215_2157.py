@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0032_auto_20201215_2130'),
+        ("shopify_sync", "0032_auto_20201215_2130"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='inventorylevel',
-            name='id',
+            model_name="inventorylevel",
+            name="id",
             field=models.AutoField(primary_key=True, serialize=False),
         ),
     ]

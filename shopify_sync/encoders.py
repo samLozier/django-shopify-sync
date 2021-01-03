@@ -15,6 +15,6 @@ class ShopifyDjangoJSONEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, shopify.Receipt):
             return str(obj)
-        if isinstance(obj, shopify.ShopifyResource) and getattr(obj, 'attributes'):
+        if isinstance(obj, shopify.ShopifyResource) and getattr(obj, "attributes"):
             return obj.attributes
         return super(ShopifyDjangoJSONEncoder, self).default(obj)

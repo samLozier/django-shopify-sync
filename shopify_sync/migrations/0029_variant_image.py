@@ -7,13 +7,18 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0028_auto_20200910_0613'),
+        ("shopify_sync", "0028_auto_20200910_0613"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variant',
-            name='image',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='shopify_sync.image'),
+            model_name="variant",
+            name="image",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="shopify_sync.image",
+            ),
         ),
     ]

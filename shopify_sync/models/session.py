@@ -10,13 +10,13 @@ class Session(models.Model):
     site = models.CharField(max_length=511)
 
     class Meta:
-        app_label = 'shopify_sync'
+        app_label = "shopify_sync"
 
     def to_shopify(self):
-        shopify_session = ShopifySession(self.site, '2020-01', self.token)
+        shopify_session = ShopifySession(self.site, "2020-01", self.token)
         # pyactiveresource has a defined __setattr__
-        shopify_session.__dict__['model'] = self
-        shopify_session.__dict__['session'] = shopify_session
+        shopify_session.__dict__["model"] = self
+        shopify_session.__dict__["session"] = shopify_session
         return shopify_session
 
     def __str__(self):
@@ -42,10 +42,10 @@ def activate_session(obj, session=None):
             # Use the session if we are given it and make sure it is a shopify
             # session we connect
             if isinstance(session, ShopifySession):
-                shopify_resource.__dict__['session'] = session
+                shopify_resource.__dict__["session"] = session
             else:
-                shopify_resource.__dict__['session'] = session.to_shopify()
-        elif hasattr(shopify_resource, 'session'):
+                shopify_resource.__dict__["session"] = session.to_shopify()
+        elif hasattr(shopify_resource, "session"):
             # If there was no session provided, see if the resource has one
             # attached
             shopify_resource.activate_session(shopify_resource.session)
@@ -62,15 +62,19 @@ def activate_session(obj, session=None):
             site = shopify_resource.connection._parse_site(obj.__class__.site)
             if site:
                 # We can't do anything as there is no site given
-                raise AttributeError("Object does not have a site attached. Please pass session")
+                raise AttributeError(
+                    "Object does not have a site attached. Please pass session"
+                )
             else:
-                site = site[0].replace('https://', '')
+                site = site[0].replace("https://", "")
                 try:
                     session = Session.objects.get(site=site)
                 except models.DoesNotExist:
-                    raise models.DoesNotExist("The session for site '%s' does not exist. "
-                                              "You must create a session first by having the "
-                                              "site login first" % site)
+                    raise models.DoesNotExist(
+                        "The session for site '%s' does not exist. "
+                        "You must create a session first by having the "
+                        "site login first" % site
+                    )
                 else:
                     shopify_resource.session = session.to_shopify()
 
@@ -79,12 +83,15 @@ def activate_session(obj, session=None):
         shopify_resource.session = obj.session.to_shopify()
         shopify_resource.model = obj
 
-    elif hasattr(obj, 'session'):
+    elif hasattr(obj, "session"):
         shopify_resource = obj
         shopify_resource.activate_session(obj.session)
 
     else:
-        raise TypeError("Object needs to be a Model, ShopifyResource, or Session not '%s'." % type(obj))
+        raise TypeError(
+            "Object needs to be a Model, ShopifyResource, or Session not '%s'."
+            % type(obj)
+        )
 
     if not isinstance(shopify_resource, ShopifySession):
         # We now can activate the session if it isn't a ShopifySession

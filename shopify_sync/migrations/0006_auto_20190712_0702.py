@@ -6,15 +6,10 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0005_remove_customer_default_address'),
+        ("shopify_sync", "0005_remove_customer_default_address"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='order',
-            name='shipping_address',
-        ),
-        migrations.DeleteModel(
-            name='ShippingAddress',
-        ),
+        migrations.RemoveField(model_name="order", name="shipping_address",),
+        migrations.DeleteModel(name="ShippingAddress",),
     ]

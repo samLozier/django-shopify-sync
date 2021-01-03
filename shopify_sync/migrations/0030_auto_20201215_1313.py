@@ -8,56 +8,75 @@ import shopify_sync.models.base
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0029_variant_image'),
+        ("shopify_sync", "0029_variant_image"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='inventorylevel',
-            old_name='inventory_item',
-            new_name='inventory_item_id',
+            model_name="inventorylevel",
+            old_name="inventory_item",
+            new_name="inventory_item_id",
         ),
-        migrations.RemoveField(
-            model_name='inventoryitem',
-            name='variant',
-        ),
+        migrations.RemoveField(model_name="inventoryitem", name="variant",),
         migrations.AddField(
-            model_name='variant',
-            name='inventory_item_id',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='shopify_sync.inventoryitem'),
+            model_name="variant",
+            name="inventory_item_id",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="shopify_sync.inventoryitem",
+            ),
         ),
         migrations.CreateModel(
-            name='Location',
+            name="Location",
             fields=[
-                ('id', models.BigIntegerField(primary_key=True, serialize=False)),
-                ('admin_graphql_api_id', models.CharField(max_length=80)),
-                ('created_at', models.DateTimeField(null=True)),
-                ('updated_at', models.DateTimeField(null=True)),
-                ('active', models.BooleanField(default=True)),
-                ('address1', models.CharField(blank=True, max_length=500, null=True)),
-                ('address2', models.CharField(blank=True, max_length=500, null=True)),
-                ('city', models.CharField(blank=True, max_length=100, null=True)),
-                ('country', models.CharField(blank=True, max_length=100, null=True)),
-                ('country_code', models.CharField(blank=True, max_length=2, null=True)),
-                ('legacy', models.BooleanField(default=False)),
-                ('name', models.CharField(blank=True, max_length=100, null=True)),
-                ('phone', models.CharField(blank=True, max_length=20, null=True)),
-                ('province', models.CharField(blank=True, max_length=100, null=True)),
-                ('province_code', models.CharField(blank=True, max_length=2, null=True)),
-                ('zip', models.CharField(blank=True, max_length=25, null=True)),
-                ('localized_country_name', models.CharField(blank=True, max_length=100, null=True)),
-                ('localized_province_name', models.CharField(blank=True, max_length=100, null=True)),
-                ('session', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.session')),
+                ("id", models.BigIntegerField(primary_key=True, serialize=False)),
+                ("admin_graphql_api_id", models.CharField(max_length=80)),
+                ("created_at", models.DateTimeField(null=True)),
+                ("updated_at", models.DateTimeField(null=True)),
+                ("active", models.BooleanField(default=True)),
+                ("address1", models.CharField(blank=True, max_length=500, null=True)),
+                ("address2", models.CharField(blank=True, max_length=500, null=True)),
+                ("city", models.CharField(blank=True, max_length=100, null=True)),
+                ("country", models.CharField(blank=True, max_length=100, null=True)),
+                ("country_code", models.CharField(blank=True, max_length=2, null=True)),
+                ("legacy", models.BooleanField(default=False)),
+                ("name", models.CharField(blank=True, max_length=100, null=True)),
+                ("phone", models.CharField(blank=True, max_length=20, null=True)),
+                ("province", models.CharField(blank=True, max_length=100, null=True)),
+                (
+                    "province_code",
+                    models.CharField(blank=True, max_length=2, null=True),
+                ),
+                ("zip", models.CharField(blank=True, max_length=25, null=True)),
+                (
+                    "localized_country_name",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "localized_province_name",
+                    models.CharField(blank=True, max_length=100, null=True),
+                ),
+                (
+                    "session",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="shopify_sync.session",
+                    ),
+                ),
             ],
             bases=(shopify_sync.models.base.ChangedFields, models.Model),
         ),
         migrations.AlterField(
-            model_name='inventorylevel',
-            name='location_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.location'),
+            model_name="inventorylevel",
+            name="location_id",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="shopify_sync.location"
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='inventorylevel',
-            unique_together={('inventory_item_id', 'location_id')},
+            name="inventorylevel",
+            unique_together={("inventory_item_id", "location_id")},
         ),
     ]

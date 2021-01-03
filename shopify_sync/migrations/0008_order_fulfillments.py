@@ -7,13 +7,15 @@ import shopify_sync.encoders
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('shopify_sync', '0007_order_shipping_address'),
+        ("shopify_sync", "0007_order_shipping_address"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='fulfillments',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, null=True),
+            model_name="order",
+            name="fulfillments",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list, null=True
+            ),
         ),
     ]

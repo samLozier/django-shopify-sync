@@ -1,16 +1,35 @@
 from django.contrib import admin
 
-from shopify_sync.models.__init__ import (Address, CarrierService, Collect,
-                                          CustomCollection, Customer, Image,
-                                          LineItem, Metafield, Option, Order,
-                                          Product, ScriptTag, Session, Shop,
-                                          SmartCollection, Variant, Webhook, 
-                                          InventoryItem, InventoryLevel)
+from shopify_sync.models.__init__ import (
+    Address,
+    CarrierService,
+    Collect,
+    CustomCollection,
+    Customer,
+    Image,
+    LineItem,
+    Metafield,
+    Option,
+    Order,
+    Product,
+    ScriptTag,
+    Session,
+    Shop,
+    SmartCollection,
+    Variant,
+    Webhook,
+    InventoryItem,
+    InventoryLevel,
+)
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'total_price', 'referring_site',)
-    readonly_fields = ('line_items',)
+    list_display = (
+        "name",
+        "total_price",
+        "referring_site",
+    )
+    readonly_fields = ("line_items",)
 
 
 class AddressInline(admin.TabularInline):

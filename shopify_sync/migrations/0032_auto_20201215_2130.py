@@ -6,22 +6,19 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0031_auto_20201215_1446'),
+        ("shopify_sync", "0031_auto_20201215_1446"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='inventorylevel',
-            old_name='inventory_item_id',
-            new_name='inventory_item',
+            model_name="inventorylevel",
+            old_name="inventory_item_id",
+            new_name="inventory_item",
         ),
         migrations.RenameField(
-            model_name='inventorylevel',
-            old_name='location_id',
-            new_name='location',
+            model_name="inventorylevel", old_name="location_id", new_name="location",
         ),
         migrations.AlterUniqueTogether(
-            name='inventorylevel',
-            unique_together={('inventory_item', 'location')},
+            name="inventorylevel", unique_together={("inventory_item", "location")},
         ),
     ]

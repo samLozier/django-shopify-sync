@@ -4,6 +4,7 @@ import shopify
 from django.db import models
 from .base import ShopifyDatedResourceModel
 
+
 class Location(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Location
 
@@ -22,9 +23,8 @@ class Location(ShopifyDatedResourceModel):
     localized_country_name = models.CharField(max_length=100, blank=True, null=True)
     localized_province_name = models.CharField(max_length=100, blank=True, null=True)
 
-
     class Meta:
-        app_label = 'shopify_sync'
+        app_label = "shopify_sync"
 
     def __str__(self):
         return "%s - %s" % (self.id, self.name)

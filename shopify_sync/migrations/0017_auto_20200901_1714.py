@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0016_inventoryitem_inventorylevel'),
+        ("shopify_sync", "0016_inventoryitem_inventorylevel"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='inventorylevel',
-            old_name='inventory_item_id',
-            new_name='inventory_item',
+            model_name="inventorylevel",
+            old_name="inventory_item_id",
+            new_name="inventory_item",
         ),
         migrations.AlterField(
-            model_name='inventoryitem',
-            name='id',
+            model_name="inventoryitem",
+            name="id",
             field=models.BigIntegerField(primary_key=True, serialize=False),
         ),
     ]

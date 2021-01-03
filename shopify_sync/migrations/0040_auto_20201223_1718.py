@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0039_variant_inventory_item_id'),
+        ("shopify_sync", "0039_variant_inventory_item_id"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='inventorylevel',
-            unique_together={('inventory_item', 'location', 'id')},
+            name="inventorylevel",
+            unique_together={("inventory_item", "location", "id")},
         ),
     ]

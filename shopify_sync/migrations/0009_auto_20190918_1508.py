@@ -5,13 +5,13 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('shopify_sync', '0008_order_fulfillments'),
+        ("shopify_sync", "0008_order_fulfillments"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='product',
-            name='body_html',
-            field=models.TextField(default='', null=True),
+            model_name="product",
+            name="body_html",
+            field=models.TextField(default="", null=True),
         ),
     ]

@@ -8,8 +8,8 @@ class ShopifySyncConfig(AppConfig):
     Application configuration for the Shopify Sync application.
     """
 
-    name = 'shopify_sync'
-    verbose_name = 'Shopify Sync'
+    name = "shopify_sync"
+    verbose_name = "Shopify Sync"
 
     def ready(self):
         """
@@ -17,4 +17,7 @@ class ShopifySyncConfig(AppConfig):
         """
 
         # Connect shopify_webhook's webhook_received signal to our synchronisation handler.
-        webhook_received.connect(webhook_received_handler, dispatch_uid = 'shopify_sync_webhook_received_handler')
+        webhook_received.connect(
+            webhook_received_handler,
+            dispatch_uid="shopify_sync_webhook_received_handler",
+        )

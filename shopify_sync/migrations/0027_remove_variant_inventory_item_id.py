@@ -6,12 +6,9 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0026_auto_20200903_2129'),
+        ("shopify_sync", "0026_auto_20200903_2129"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='variant',
-            name='inventory_item_id',
-        ),
+        migrations.RemoveField(model_name="variant", name="inventory_item_id",),
     ]

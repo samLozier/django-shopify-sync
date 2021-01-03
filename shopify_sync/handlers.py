@@ -4,35 +4,44 @@ log = logging.getLogger(__name__)
 
 
 def get_topic_model(topic, data):
-    from .models import (CustomCollection, Customer, Order, Product, Shop,
-                         SmartCollection, Metafield, InventoryItem, InventoryLevel)
+    from .models import (
+        CustomCollection,
+        Customer,
+        Order,
+        Product,
+        Shop,
+        SmartCollection,
+        Metafield,
+        InventoryItem,
+        InventoryLevel,
+    )
 
     """
     Return the model related to the given topic, if it's a valid topic
     permitted by theme settings. If the topic isn't permitted, or there's
     no rule mapping the given topic to a model, None is returned.
     """
-    topic = topic.split('/')[0]
+    topic = topic.split("/")[0]
     mapping = {
-        'collections': SmartCollection if 'rules' in data else CustomCollection,
-        'products': Product,
-        'customers': Customer,
-        'orders': Order,
-        'metafields': Metafield,
-        'shop': Shop,
-        'inventory_items': InventoryItem, 
-        'inventory_levels': InventoryLevel
+        "collections": SmartCollection if "rules" in data else CustomCollection,
+        "products": Product,
+        "customers": Customer,
+        "orders": Order,
+        "metafields": Metafield,
+        "shop": Shop,
+        "inventory_items": InventoryItem,
+        "inventory_levels": InventoryLevel,
     }
     return mapping.get(topic, None)
 
 
 def get_topic_action(topic):
-    topic = topic.split('/')[1]
+    topic = topic.split("/")[1]
     mapping = {
-        'create': 'sync_one',
-        'update': 'sync_one',
-        'updated': 'sync_one',
-        'fulfilled': 'sync_one',
+        "create": "sync_one",
+        "update": "sync_one",
+        "updated": "sync_one",
+        "fulfilled": "sync_one",
     }
     return mapping.get(topic, None)
 
@@ -59,6 +68,6 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
 
     # Execute the desired action.
 
-    if model_action == 'sync_one':
+    if model_action == "sync_one":
         model.objects.sync_one(shopify_resource)
-    assert model_action == 'sync_one', "The model action has to be sync_one"
+    assert model_action == "sync_one", "The model action has to be sync_one"

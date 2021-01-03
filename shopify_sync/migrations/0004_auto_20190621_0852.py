@@ -7,18 +7,26 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0003_merge_20190107_1818'),
+        ("shopify_sync", "0003_merge_20190107_1818"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='address',
-            name='customer',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.Customer'),
+            model_name="address",
+            name="customer",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="shopify_sync.Customer",
+            ),
         ),
         migrations.AddField(
-            model_name='shippingaddress',
-            name='customer',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.Customer'),
+            model_name="shippingaddress",
+            name="customer",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="shopify_sync.Customer",
+            ),
         ),
     ]

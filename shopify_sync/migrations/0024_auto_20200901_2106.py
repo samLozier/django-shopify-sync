@@ -7,28 +7,30 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0023_variant_inventory_item_id'),
+        ("shopify_sync", "0023_variant_inventory_item_id"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='inventoryitem',
-            name='variant_id',
-        ),
-        migrations.RemoveField(
-            model_name='inventorylevel',
-            name='inventory_item_id',
-        ),
+        migrations.RemoveField(model_name="inventoryitem", name="variant_id",),
+        migrations.RemoveField(model_name="inventorylevel", name="inventory_item_id",),
         migrations.AddField(
-            model_name='inventoryitem',
-            name='variant',
-            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.variant'),
+            model_name="inventoryitem",
+            name="variant",
+            field=models.ForeignKey(
+                default=0,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="shopify_sync.variant",
+            ),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='inventorylevel',
-            name='inventory_item',
-            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='shopify_sync.inventoryitem'),
+            model_name="inventorylevel",
+            name="inventory_item",
+            field=models.ForeignKey(
+                default=0,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="shopify_sync.inventoryitem",
+            ),
             preserve_default=False,
         ),
     ]

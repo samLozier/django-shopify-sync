@@ -8,83 +8,131 @@ import shopify_sync.encoders
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0009_auto_20190918_1508'),
+        ("shopify_sync", "0009_auto_20190918_1508"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='customcollection',
-            name='image',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="customcollection",
+            name="image",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='lineitem',
-            name='properties',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}),
+            model_name="lineitem",
+            name="properties",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+            ),
         ),
         migrations.AlterField(
-            model_name='lineitem',
-            name='tax_lines',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}),
+            model_name="lineitem",
+            name="tax_lines",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='billing_address',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="billing_address",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='client_details',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="client_details",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='discount_codes',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="discount_codes",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='fulfillments',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="fulfillments",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='note_attributes',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="note_attributes",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='shipping_address',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="shipping_address",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='shipping_lines',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}),
+            model_name="order",
+            name="shipping_lines",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+            ),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='tax_lines',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="order",
+            name="tax_lines",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='smartcollection',
-            name='image',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="smartcollection",
+            name="image",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='smartcollection',
-            name='rules',
-            field=jsonfield.fields.JSONField(default=shopify_sync.encoders.empty_list, dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}),
+            model_name="smartcollection",
+            name="rules",
+            field=jsonfield.fields.JSONField(
+                default=shopify_sync.encoders.empty_list,
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+            ),
         ),
         migrations.AlterField(
-            model_name='webhook',
-            name='fields',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="webhook",
+            name="fields",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='webhook',
-            name='metafield_namespaces',
-            field=jsonfield.fields.JSONField(dump_kwargs={'cls': shopify_sync.encoders.ShopifyDjangoJSONEncoder}, null=True),
+            model_name="webhook",
+            name="metafield_namespaces",
+            field=jsonfield.fields.JSONField(
+                dump_kwargs={"cls": shopify_sync.encoders.ShopifyDjangoJSONEncoder},
+                null=True,
+            ),
         ),
     ]

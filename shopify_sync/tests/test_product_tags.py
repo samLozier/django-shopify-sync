@@ -48,13 +48,13 @@ class ProductSingleTagRemoveTestCase(ProductTagBaseCase):
         self.assertEqual(self.product.tags, "")
 
     def test_remove_single_tag_with_one_tag(self):
-        self.product.tags = self.prod_tag + ', ' + self.single_tag
+        self.product.tags = self.prod_tag + ", " + self.single_tag
         self.product.remove_tag(self.single_tag)
         self.assertNotContains(self.product.tags, self.single_tag)
         self.assertContains(self.product.tags, self.prod_tag)
 
     def test_remove_single_tag_with_multi_tag(self):
-        self.product.tags = self.prod_tags + ', ' + self.single_tag
+        self.product.tags = self.prod_tags + ", " + self.single_tag
         self.product.remove_tag(self.single_tag)
         self.assertNotContains(self.product.tags, self.single_tag)
         self.assertContains(self.product.tags, self.prod_tags)
@@ -86,13 +86,13 @@ class ProductMultiTagRemoveTestCase(ProductTagBaseCase):
         self.assertEqual(self.product.tags, "")
 
     def test_remove_multi_tag_with_one_tag(self):
-        self.product.tags = self.prod_tag + ', ' + self.multi_tag_str
+        self.product.tags = self.prod_tag + ", " + self.multi_tag_str
         self.product.remove_tag(self.multi_tag)
         self.assertNotContains(self.product.tags, self.multi_tag_str)
         self.assertContains(self.prod_tag, self.product.tags)
 
     def test_remove_multi_tag_with_multi_tag(self):
-        self.product.tags = self.prod_tags + ', ' + self.multi_tag_str
+        self.product.tags = self.prod_tags + ", " + self.multi_tag_str
         self.product.remove_tag(self.multi_tag)
         self.assertNotContains(self.product.tags, self.multi_tag_str)
         self.assertContains(self.product.tags, self.prod_tags)

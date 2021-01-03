@@ -6,26 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('shopify_sync', '0011_historicalproduct_historicalvariant'),
+        ("shopify_sync", "0011_historicalproduct_historicalvariant"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='historicalvariant',
-            name='history_user',
-        ),
-        migrations.RemoveField(
-            model_name='historicalvariant',
-            name='product',
-        ),
-        migrations.RemoveField(
-            model_name='historicalvariant',
-            name='session',
-        ),
-        migrations.DeleteModel(
-            name='HistoricalProduct',
-        ),
-        migrations.DeleteModel(
-            name='HistoricalVariant',
-        ),
+        migrations.RemoveField(model_name="historicalvariant", name="history_user",),
+        migrations.RemoveField(model_name="historicalvariant", name="product",),
+        migrations.RemoveField(model_name="historicalvariant", name="session",),
+        migrations.DeleteModel(name="HistoricalProduct",),
+        migrations.DeleteModel(name="HistoricalVariant",),
     ]
