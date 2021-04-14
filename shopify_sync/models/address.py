@@ -1,11 +1,10 @@
 from __future__ import unicode_literals
 
-import uuid
-
 import shopify
 from django.db import models
 
 from shopify_sync import SHOPIFY_API_PAGE_LIMIT
+# from . import Customer
 from .base import ShopifyResourceModelBase
 from .customer import Customer
 
@@ -22,7 +21,11 @@ class ShopifyAddress(shopify.base.ShopifyResource):
     _singular = "address"
 
     @classmethod
-    def count(cls, _options=None, **kwargs):
+    def count(cls: "ShopifyAddress", _options=None, **kwargs) -> int:
+        """
+        This appears to be an unnecessarily convoluted way to find the hardcoded Shopify page limit value
+        ¯\_(ツ)_/¯
+        """
         return SHOPIFY_API_PAGE_LIMIT
 
 
@@ -60,7 +63,7 @@ class Address(ShopifyResourceModelBase):
             return "Address id=%s" % self.id
 
     @property
-    def _prefix_options(self):
+    def _prefix_options(self) -> dict[str:int]:
         return {"customer_id": self.customer.id}
 
     class Meta:

@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
+from typing import Union
+
 import shopify
 from django.apps import apps
 from django.db import models
+from django_hint import QueryType
 
 from .base import ShopifyDatedResourceModel
 
@@ -28,12 +31,12 @@ class Customer(ShopifyDatedResourceModel):
         app_label = "shopify_sync"
 
     @property
-    def addresses(self):
+    def addresses(self) -> QueryType["Address"]:
         address = apps.get_model("shopify_sync", "Address")
         return address.objects.filter(customer=self)
 
     @property
-    def default_address(self):
+    def default_address(self) -> Union["Address", None]:
         address = apps.get_model("shopify_sync", "Address")
         try:
             return address.objects.get(customer=self, default=True)
@@ -45,7 +48,7 @@ class Customer(ShopifyDatedResourceModel):
         return [apps.get_model("shopify_sync", "Address")]
 
     @property
-    def orders(self):
+    def orders(self) -> QueryType["Order"]:
         from .order import Order
 
         return Order.objects.filter(customer=self)

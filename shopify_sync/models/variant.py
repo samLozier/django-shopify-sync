@@ -1,14 +1,15 @@
 from __future__ import unicode_literals
 
+import logging
+import os
+
 import shopify
 from django.db import models
 
 from .base import ShopifyDatedResourceModel
 from .image import Image
-from .inventorylevel import InventoryLevel
-from .inventoryitem import InventoryItem
 
-from django.apps import apps
+log = logging.getLogger(__name__)
 
 
 class Variant(ShopifyDatedResourceModel):
@@ -52,6 +53,68 @@ class Variant(ShopifyDatedResourceModel):
 
     def __str__(self):
         return "%s - %s" % (self.product, self.title)
+
+    @property
+    def _prefix_options(self) -> dict[str:int]:
+        return {"product_id": self.product.id}
+
+    def save(
+        self,
+        no_sale_on: bool = bool(os.environ["NO_SALE_ON"]),
+        no_sale_tag: str = os.environ["NO_SALE_TAG"],
+        *args,
+        **kwargs
+    ):
+        """
+        Due to breaking changes in the Shopify API >= 2020-04 it is now impossible to use compare_at_price == 0
+        to filter for products that are not on sale in a smart collection. This filter is commonly used to exclude
+        products that are already discounted from discount eligibility or use in sales. To re-create this functinality
+        we're adding a tag (default==NonSale) to a variants product if all variants are not on sale, then using the tag in
+        smart collections on shopify.
+
+        Not on sale is defined as: compare_at_price == 0 or None or price
+
+        :param no_sale_on : boolean, controls wheather to use this save override
+        :type no_sale_on: bool
+        :param no_sale_tag:
+        :type no_sale_tag: str
+        :param args: 
+        :type args: 
+        :param kwargs: 
+        :type kwargs: 
+        :return: 
+        :rtype: 
+        """
+
+        parent_product = self.product
+        if no_sale_on is True:
+            super(Variant, self).save(*args, **kwargs)
+            if (
+                all(
+                    [
+                        True
+                        if v.compare_at_price == 0 or v.compare_at_price == None
+                        else False
+                        for v in parent_product.variants
+                    ]
+                )
+                is True
+            ):
+                # all variants have a "not on sale" compare_at_price
+                on_sale = False
+            else:
+                on_sale = True
+
+            if on_sale is False and no_sale_tag not in parent_product.tag_list:
+                parent_product.add_tag(no_sale_tag)
+                parent_product.save(push=True)
+
+            if on_sale is True and no_sale_tag in parent_product.tag_list:
+                parent_product.remove_tag(no_sale_tag)
+                parent_product.save(push=True)
+        else:
+            super(Variant, self).save(*args, **kwargs)
+        # log.debug("%s metafield for product %s <%s>" % (_new, self, instance))
 
     # @property  # wrong, needs to be a DB field
     # def inventory_items(self):

@@ -4,10 +4,13 @@ import shopify
 from django.db import models
 
 from .base import ShopifyResourceManager, ShopifyResourceModel
+from typing import Iterable
 
 
 class ShopManager(ShopifyResourceManager):
-    def fetch_all(self, user, **kwargs):
+    def fetch_all(
+        self, user: shopify.User, **kwargs
+    ) -> Iterable[shopify.ShopifyResource]:
         """
         Override the default fetch_all() generator function, as there is no traditional API endpoint for fetching Shop
         resources. Instead, we just yield the singular Shop instance.

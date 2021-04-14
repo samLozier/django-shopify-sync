@@ -9,6 +9,7 @@ from .location import Location
 
 
 class InventoryLevel(ShopifyDatedResourceModel):
+    # todo Inherit from ShopifyResourceModelBase instead of dated resource to avoid the ID issue
     shopify_resource_class = shopify.resources.InventoryLevel
     # parent_field = 'inventory_item_id'
     related_fields = ["location", "inventory_item"]

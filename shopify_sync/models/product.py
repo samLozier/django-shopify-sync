@@ -1,21 +1,30 @@
 from __future__ import unicode_literals
 
-import shopify
 import logging
+from typing import Union, Generator
+
+import shopify
 from django.db import models
 
 from .base import ShopifyDatedResourceModel
 from .collect import Collect
 from .image import Image
-from .option import Option
-from .variant import Variant
 from .metafield import Metafield
+from .option import Option
 from .session import activate_session
+from .variant import Variant
 
 log = logging.getLogger(__name__)
 
 
 class Product(ShopifyDatedResourceModel):
+    """
+    Mirrors the Product objects returned from the API with a few notable exceptions.
+
+    Buisness logic RE "not on sale" is applied to the product but triggered by changes at the variant level
+    check out the overridden save method on the Variant class for more info.
+
+    """
     shopify_resource_class = shopify.resources.Product
     child_fields = {
         "images": Image,
@@ -29,7 +38,7 @@ class Product(ShopifyDatedResourceModel):
     product_type = models.CharField(max_length=255, db_index=True)
     published_at = models.DateTimeField(null=True)
     published_scope = models.CharField(max_length=64, default="global")
-    tags = models.CharField(max_length=255, blank=True)
+    tags = models.CharField(max_length=600, blank=True)
     template_suffix = models.CharField(max_length=255, null=True)
     title = models.CharField(max_length=255, db_index=True)
     vendor = models.CharField(max_length=255, db_index=True, null=True)
@@ -67,32 +76,33 @@ class Product(ShopifyDatedResourceModel):
             max([variant.grams for variant in self.variants]),
         )
 
-    def _get_tag_list(self):
-        # Tags are comma-space delimited.
-        # https://help.shopify.com/api/reference/product#tags-property
+    def _get_tag_list(self) -> list[str, None]:
+        """Tags are comma-space delimited.
+        https://help.shopify.com/api/reference/product#tags-property"""
         return self.tags.split(", ") if self.tags else []
 
-    def _set_tag_list(self, tag_list):
-        # we need to make sure tag_list is a list, if it is not we will make it
-        # one and we will use join to save to tags. The idea is that tag_list
-        # will match self.tags at all time. DOESN'T AUTO SAVE
+    def _set_tag_list(self, tag_list: Union[str, list[str]]) -> str:
+        """ We need to make sure tag_list is a list, if it is not we will make it
+        one and we will use join to save to tags. The idea is that tag_list
+        will match self.tags at all time. DOESN'T AUTO SAVE"""
         self.tags = ", ".join(tag_list if isinstance(tag_list, list) else [tag_list])
         return self.tags
 
     tag_list = property(_get_tag_list, _set_tag_list)
 
-    def add_tag(self, tag):
+    def add_tag(self, tag: Union[list, str, None]):
         # Add a tag or a list of tags
         if tag:
             self.tag_list += tag if isinstance(tag, list) else [tag]
 
-    def remove_tag(self, tag):
+    def remove_tag(self, tag: Union[list, str, None]):
         # remove all instances of a tag or list of tags
         if tag:
             rm_list = tag if isinstance(tag, list) else [tag]
             self.tag_list = [tag_ for tag_ in self.tag_list if tag_ not in rm_list]
 
-    def save(self, sync_meta=False, *args, **kwargs):
+    def save(self, sync_meta: bool = False, *args, **kwargs):
+        shopify_resource: Generator[Union["ShopifyResource", "Session"]]
         with activate_session(self) as shopify_resource:
             # only want to sync the metafields if we have it set to true
             metafields = shopify_resource.metafields() if sync_meta else []

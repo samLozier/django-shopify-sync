@@ -2,11 +2,12 @@ from __future__ import unicode_literals
 
 import shopify
 from django.db import models
+from django_hint import QueryType
 from jsonfield import JSONField
 
-from ..encoders import ShopifyDjangoJSONEncoder
 from .base import ShopifyResourceModel
 from .collect import Collect
+from ..encoders import ShopifyDjangoJSONEncoder
 
 
 class CustomCollection(ShopifyResourceModel):
@@ -27,5 +28,11 @@ class CustomCollection(ShopifyResourceModel):
         app_label = "shopify_sync"
 
     @property
-    def collects(self):
+    def collects(self) -> QueryType[Collect]:
+        """
+        Property of CustomCollection, returns related collect objects
+        :return: Queryset
+        :rtype: QueryType[Collect]
+        """
         return Collect.objects.filter(self.user, collection_id=self.id)
+        # todo where is this user field coming from? wtf?

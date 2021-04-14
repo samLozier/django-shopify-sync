@@ -6,7 +6,10 @@ from .collect import Collect
 from .custom_collection import CustomCollection
 from .customer import Customer
 from .image import Image
+from .inventoryitem import InventoryItem
+from .inventorylevel import InventoryLevel
 from .line_item import LineItem
+from .location import Location
 from .metafield import Metafield
 from .option import Option
 from .order import Order
@@ -17,6 +20,3 @@ from .shop import Shop
 from .smart_collection import SmartCollection
 from .variant import Variant
 from .webhook import Webhook
-from .inventoryitem import InventoryItem
-from .inventorylevel import InventoryLevel
-from .location import Location

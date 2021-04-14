@@ -5,6 +5,7 @@ import logging
 from django.apps import apps
 from django.db import models
 from shopify_sync import SHOPIFY_API_PAGE_LIMIT
+from django_hint import QueryType
 
 from .base import ShopifyDatedResourceModel
 
@@ -31,7 +32,7 @@ class InventoryItem(ShopifyDatedResourceModel):
         app_label = "shopify_sync"
 
     @property
-    def inventorylevels(self):
+    def inventorylevels(self) -> QueryType["InventoryLevel"]:
         inventorylevel = apps.get_model("shopify_sync", "InventoryLevel")
         return inventorylevel.objects.filter(inventory_item_id=self.id)
 

@@ -40,9 +40,10 @@ def get_topic_action(topic):
     mapping = {
         "create": "sync_one",
         "update": "sync_one",
+        "edited": "sync_one",
         "updated": "sync_one",
         "fulfilled": "sync_one",
-    }
+    } #todo Why is there no delete?
     return mapping.get(topic, None)
 
 
@@ -64,7 +65,10 @@ def webhook_received_handler(sender, domain, topic, data, **kwargs):
 
     msg = "Creating model '%s' from webhook data" % model.__name__
     log.info(msg)
+
+    # todo theoretically we could save here if no child objects?
     shopify_resource = model.shopify_resource_from_json(data)
+
 
     # Execute the desired action.
 

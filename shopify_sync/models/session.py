@@ -3,6 +3,9 @@ from __future__ import unicode_literals
 from django.db import models
 from shopify import Session as ShopifySession, ShopifyResource
 from contextlib import contextmanager
+from typing import Union
+
+# from .base import ShopifyResourceModel
 
 
 class Session(models.Model):
@@ -12,7 +15,7 @@ class Session(models.Model):
     class Meta:
         app_label = "shopify_sync"
 
-    def to_shopify(self):
+    def to_shopify(self) -> ShopifySession:
         shopify_session = ShopifySession(self.site, "2020-01", self.token)
         # pyactiveresource has a defined __setattr__
         shopify_session.__dict__["model"] = self
@@ -24,7 +27,10 @@ class Session(models.Model):
 
 
 @contextmanager
-def activate_session(obj, session=None):
+def activate_session(
+    obj: Union[Session, ShopifyResource, "ShopifyResourceModel"],
+    session: Union[None, ShopifySession, Session] = None,
+):
     """
     We want to make sure that we do not just use 'activate_session' and
     then not close the session, this is our solution.

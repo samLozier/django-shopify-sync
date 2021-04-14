@@ -51,6 +51,8 @@ class LineItem(ShopifyResourceModel):
             self.variant_id = product.variants[0].id
         else:
             # there is more than one variant, so we look up the title
+            # todo why ? can't we just look up by variant_id? if this is for dynamic linking
+            # to a product that changed, we should try handle first
             variant = product.variant_set.get(title=self.variant_title)
             self.variant_id = variant.id
         self.save()

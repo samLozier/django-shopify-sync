@@ -3,7 +3,7 @@ __version__ = ".".join(map(str, VERSION))
 __author__ = "David Burke"
 
 
-SHOPIFY_API_PAGE_LIMIT = 250
+SHOPIFY_API_PAGE_LIMIT: int = 250
 
 
-default_app_config = "shopify_sync.apps.ShopifySyncConfig"
+default_app_config: str = "shopify_sync.apps.ShopifySyncConfig"

@@ -2,22 +2,27 @@ from __future__ import unicode_literals
 
 import logging
 from copy import copy
-import math
+from typing import Union, Dict, Any, Iterable, Iterator
 
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, utils
 from django.db.models.fields.related import ForeignObjectRel
 from pyactiveresource.connection import ResourceNotFound
-import traceback
 
-from .. import SHOPIFY_API_PAGE_LIMIT
-
-from .session import Session, ShopifyResource, ShopifySession, activate_session
+from shopify_sync.__init__ import SHOPIFY_API_PAGE_LIMIT
+from shopify_sync.models.session import (
+    Session,
+    ShopifyResource,
+    ShopifySession,
+    activate_session,
+)
 
 log = logging.getLogger(__name__)
 
+JSONType = Union[str, int, float, bool, None, Dict[str, Any], list[Any]]
 
-class ChangedFields(object):
+
+class ChangedFields:
     """
     Keeps track of fields that have changed since model instantiation, and on
     save updates only those fields.
@@ -36,7 +41,7 @@ class ChangedFields(object):
         super(ChangedFields, self).__init__(*args, **kwargs)
 
         self._changed_fields = {
-            "id": self.id,
+            "id": self.id,  #todo can pk be used instead and possibly handle a unique together situation?
         }
 
     def __setattr__(self, name, value):
@@ -56,11 +61,17 @@ class ChangedFields(object):
 
                     if name in changed_fields:
                         if changed_fields[name] == new:
-                            # We've changed this field back to its value in the db. No need to push it back up.
+                            # We've changed this field back to its value in the db.
+                            # No need to push it back up.
                             changed_fields.pop(name)
 
                     else:
-                        changed_fields[name] = copy(str(new))
+                        if new is not None:
+                            new = str(new)
+                        # changed_fields[name] = copy(str(new))
+                        changed_fields[name] = copy(
+                            new
+                        )  # "None" was being encoded as a string and failing.
 
             else:
                 super(ChangedFields, self).__setattr__(name, value)
@@ -71,30 +82,38 @@ class ChangedFields(object):
 
 class ShopifyResourceManager(models.Manager):
     """
-    Base class for managing Shopify resource models.
+    Base class for managing Shopify resource models. Which are from the shopify python API package
+    that handles communication between this app and the Shopify REST API
     """
 
     def sync_one(
         self,
-        obj,
-        caller=None,  # noqa C901
-        sync_children=True,
-        sync_meta=False,
+        obj: Union[ShopifyResource, "ShopifyResourceModel"],
+        caller: Union[None, "ShopifyResourceModelBase"] = None,  # noqa C901
+        sync_children: bool = True,
+        sync_meta: bool = False,
         *args,
         **kwargs,
-    ):
+    ) -> "ShopifyResourceModel":
         """
-        Given a Shopify resource object, synchronise it locally
+         Given a Shopify resource object, synchronise it locally
         so that we have an up-to-date version in the local
         database. Returns the created or updated local model.
-
         :param obj:
-        :param caller:
-        :param sync_children:
-        :param sync_meta: should sync Metafields
+        :type obj: Union[ShopifyResource, ShopifyResourceModel],
+        :param caller: The parent object that's calling the related object, eg: product looking for variants
+        :type caller: Union[None, ShopifyResourceModelBase]
+        :param sync_children: Bool - sync child products or not
+        :type sync_children: bool
+        :param sync_meta: Sync the metadata or not
+        :type sync_meta: bool
         :param args:
+        :type args:
         :param kwargs:
-        :return:
+        :type kwargs:
+        :return: instance of a ShopifyResource Model
+        :rtype: ShopifyResourceModel
+
         """
         if isinstance(obj, ShopifyResource):
             shopify_resource = obj
@@ -104,19 +123,19 @@ class ShopifyResourceManager(models.Manager):
             shopify_resource = obj.shopify_resource
         else:
             raise AttributeError(
-                "Object must have a shopify_resouce attr or " "be a ShopifyResource"
+                "Object must have a shopify_resource attr or " "be a ShopifyResource"
             )
         # Synchronise any related model field.
-        msg = "Syncing shopify resource '%s'" % str(shopify_resource)
+        msg = f"Syncing shopify resource {str(shopify_resource)}"
         if caller:
-            # We need to take the session form the parent
+            # We need to take the session from the parent
             shopify_resource.session = caller.session
-            msg += " - called by parent resource '%s'" % str(caller)
+            msg += f" - called by parent resource {str(caller)}"
         else:
             # shopify_resource.session = Session.objects.first() # original
             shopify_resource.session = obj.session
 
-        log.debug(msg + ", site '%s'" % shopify_resource.session.site)
+        log.debug(msg + f", site {shopify_resource.session.site}")
 
         # Not sync the related fields if we are not doing the children
         if sync_children:
@@ -169,7 +188,6 @@ class ShopifyResourceManager(models.Manager):
             log.error(
                 f"Sync failed for resource: {shopify_resource} and defaults: {defaults} exception: {e}"
             )
-            print("x", end="")
             raise e
 
         # don't sync children if set to False
@@ -214,23 +232,22 @@ class ShopifyResourceManager(models.Manager):
 
         _new = "Created" if created else "Updated"
         log.debug("%s <%s>" % (_new, instance))
-
-        # show sync progress
-        print(".", end="")
-
         return instance
 
     def sync_many(
-        self, shopify_resources, parent_shopify_resource=None, sync_meta=False
-    ):
+        self,
+        shopify_resources: Iterable[ShopifyResource],
+        parent_shopify_resource: Union[None, ShopifyResource] = None,
+        sync_meta: bool = False,
+    ) -> list["ShopifyResourceModel"]:
         """
         Given an array of Shopify resource objects, synchronise all of them locally so that we have up-to-date versions
         in the local database, Returns an array of the created or updated local models.
 
-        :param shopify_resources:
-        :param parent_shopify_resource:
-        :param sync_meta: should sync Metafields
-        :return:
+        :param shopify_resources: a list of ShopifyResource objects to sync (not models)
+        :param parent_shopify_resource: parent (singular) to the list of resources we're syncing
+        :param sync_meta: bool - should we sync Metafields
+        :return: List of synced ShopifyResource instances
         """
         instances = []
         for shopify_resource in shopify_resources:
@@ -245,7 +262,7 @@ class ShopifyResourceManager(models.Manager):
                         self.model.parent_field,
                         getattr(parent_shopify_resource, "id"),
                     )
-                instance = self.sync_one(
+                instance: ShopifyResourceModel = self.sync_one(
                     shopify_resource,
                     caller=parent_shopify_resource,
                     sync_meta=sync_meta,
@@ -253,14 +270,20 @@ class ShopifyResourceManager(models.Manager):
                 instances.append(instance)
             except Exception as e:
                 log.error(f"Exception during sync_many of {shopify_resource}: {e}")
-                print(traceback.format_exc())
 
         return instances
 
-    def sync_all(self, session, sync_meta=False, **kwargs):
+    def sync_all(
+        self, session: Session, sync_meta: bool = False, **kwargs
+    ) -> list["ShopifyResourceModel"]:
         """
         Synchronised all Shopify resources matched by the given **kwargs filter to our local database.
         Returns the synchronised local model instances.
+
+        If you're reading this again, you're probably wondering how to sync a list of ID's:
+        model.objects.sync_all(session=sessionobject, ids='12345,') <- id'S plural and the extra , are needed
+
+
 
         :param session:
         :param sync_meta: should sync Metafields
@@ -273,12 +296,12 @@ class ShopifyResourceManager(models.Manager):
         instances = self.sync_many(shopify_resources, sync_meta=sync_meta)
 
         # final newline after sync progress
-        if "caller" not in kwargs:
-            print("")
+        # if "caller" not in kwargs:
+        #     print("")
 
         return instances
 
-    def fetch_all(self, session, **kwargs):
+    def fetch_all(self, session: Session, **kwargs) -> Iterator[ShopifyResource]:
         """
         Generator function, which fetches all Shopify resources matched by the given **kwargs filter.
 
@@ -312,18 +335,25 @@ class ShopifyResourceManager(models.Manager):
                     shopify_resource.session = session
                     yield shopify_resource
 
-    def push_one(self, instance, force=False, create=False, *args, **kwargs):
+    def push_one(
+        self,
+        instance: "ShopifyResourceModel",
+        force: bool = False,
+        create: bool = False,
+        *args,
+        **kwargs,
+    ):
         """
         Push a local model instance to Shopify, creating or updating in the process.
-        We ensure that we only send data that has been cnaged as well.
+        We ensure that we only send data that has been changed as well.
 
         The instance parameter needs to be a ShopifyResourceModel.
 
         Returns the locally synchronised model on success.
 
-        :param instance:
-        :param force:
-        :param create:
+        :param instance: ShopifyResourceModel
+        :param force: bool - Must be true with create,
+        :param create: bool - Create the object on shopify if not found to sync with
         :param args:
         :param kwargs:
         :return:
@@ -353,7 +383,7 @@ class ShopifyResourceManager(models.Manager):
                 # to_shopify_resource and that ignores the _changed_fields, so
                 # we need to re set them
                 shopify_resource.attributes = instance._changed_fields
-                log.info(
+                log.debug(
                     "Using only changed fields to push '%s': %s"
                     % (shopify_resource, shopify_resource.attributes)
                 )
@@ -391,7 +421,9 @@ class ShopifyResourceManager(models.Manager):
         with activate_session(shopify_resource, session=session) as shopify_resource:
             return self.sync_one(shopify_resource, *args, **kwargs)
 
-    def push_many(self, instances, *args, **kwargs):
+    def push_many(
+        self, instances: list["ShopifyResourceModel"], *args, **kwargs
+    ) -> list["ShopifyResourceModel"]:
         """
         Push a list of local model instances to Shopify,
         creating or updating in the process.
@@ -434,13 +466,20 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
     @property
     def manager(self):
+        """
+        Appears to return currently instantiated instances of the current Model?
+        #todo figure out for sure..
+        :return:
+        :rtype:
+        """
         return self.klass.objects
 
     @classmethod
-    def get_defaults(cls, shopify_resource):
+    def get_defaults(cls, shopify_resource: ShopifyResource) -> dict:
         """
         Get a hash of attribute: values that can be used to update or create a local instance of the given Shopify
         resource.
+        :type shopify_resource: ShopifyResource
         """
         defaults = {}
 
@@ -464,7 +503,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         return defaults
 
     @classmethod
-    def get_default_fields(cls):
+    def get_default_fields(cls) -> list[str]:
         """
         Get a list of field names that should be copied directly from a Shopify resource model when building the
         defaults hash.
@@ -491,7 +530,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         )
 
     @classmethod
-    def get_parent_field_names(cls):
+    def get_parent_field_names(cls) -> list[str, None]:
         """
         Get a list of the names of parent fields for the current model.
         """
@@ -500,14 +539,14 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         return [cls.parent_field]
 
     @classmethod
-    def get_related_field_names(cls):
+    def get_related_field_names(cls) -> list[Union[str, None]]:
         """
         Get a list of the names of related fields for the current model.
         """
         return cls.related_fields
 
     @classmethod
-    def get_child_fields(cls):
+    def get_child_fields(cls) -> dict:
         """
         Get a list of child fields for the current model, in a "hash" format with the name of the field as the key
         and the related child model as the value.
@@ -515,17 +554,22 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         return cls.child_fields
 
     @classmethod
-    def get_r_fields(cls):
+    def get_r_fields(cls) -> dict:
+        """
+        Gets the r_fields values for a given model
+        :return: r_fields
+        :rtype: dict
+        """
         return cls.r_fields
 
     @classmethod
-    def shopify_resource_from_json(cls, json):
+    def shopify_resource_from_json(cls, json: JSONType) -> ShopifyResource:
         """
         Return an instance of the Shopify Resource model for this model,
         built recursively using the given JSON object.
         """
         instance = cls.shopify_resource_class()
-        log.info("Creating shopify reasource '%s'" % str(instance))
+        log.debug("Creating shopify reasource '%s'" % str(instance))
         log.debug("Using the following json: %s" % json)
 
         # Recursively instantiate any child attributes.
@@ -545,7 +589,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
         return instance
 
     @staticmethod
-    def clean_for_post(shopify_resource):
+    def clean_for_post(shopify_resource: ShopifyResource) -> ShopifyResource:
         """
         When we use POST, we cannot have a 'id' present or else we get this error:
 
@@ -554,6 +598,10 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
         Our solution is to return the object with the id removed. We use a static method
         as we want to pass the object and it could be a ShopifyResource or model
+
+        This is a staticmethod of the ShopifyResourceModelBase class that returns a shopify resource
+        (shopify_python_api object) that matched the ShopifyResourceModelBase objects attrs with some modifications
+
         """
         clean_these_lists = ["shipping_lines", "line_items"]
         clean_these_keys = ["id", "tax_lines", "order_number", "number", "source_name"]
@@ -609,7 +657,7 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
         return shopify_resource
 
-    def to_shopify_resource(self):
+    def to_shopify_resource(self) -> ShopifyResource:
         """
         Convert this ShopifyResource model instance to its equivalent ShopifyResource.
         """
@@ -653,24 +701,37 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
         return instance
 
-    def to_json(self):
+    def to_json(self) -> dict:
         """
         Convert this ShopifyResource model instance to a "JSON" (simple Python) object.
         """
         return self.to_shopify_resource().attributes
 
-    def sync(self, sync_meta=False):
+    def sync(self, sync_meta: bool = False) -> None:
         shopify_resource = self.to_shopify_resource()
         shopify_resource.reload()
         self.manager.sync_one(shopify_resource, sync_meta=sync_meta)
         self.refresh_from_db()
 
-    def save(self, push=False, *args, **kwargs):
+    def save(self, push: bool = False, *args, **kwargs) -> None:
+        """
+
+        :param push: True = update shopify to match local changes, default = False
+        :type push: bool
+        :param args:
+        :type args:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
         if push:
             session = kwargs.pop("session", None)
             session = session if session else self.session
-            log.info("Pushing '%s' (%s) to %s" % (self, self.id, session.site))
-            self = self.manager.push_one(self, session=session, *args, **kwargs)
+            log.debug("Pushing '%s' (%s) to %s" % (self, self.id, session.site))
+            self = self.manager.push_one(
+                self, session=session, *args, **kwargs
+            )  # todo typecheck says this should be ShopifyResourceModel
             # have to save so that we can get the id if it is new
             kwargs.pop("sync_children", None)  # remove option field
             super(ShopifyResourceModelBase, self).save(*args, **kwargs)
@@ -681,6 +742,13 @@ class ShopifyResourceModelBase(ChangedFields, models.Model):
 
 
 class ShopifyResourceModel(ShopifyResourceModelBase):
+    """
+    Extends the ShopifyResourceModelBase and adds standard fields that most models/objects share
+    """
+
+    # todo investegate if the ID field should be implemented differently to enable models that don't have
+    # one, eg: InventoryLevel
+
     id = models.BigIntegerField(
         primary_key=True
     )  # The numbers that shopify uses are too large

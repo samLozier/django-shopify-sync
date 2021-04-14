@@ -7,6 +7,7 @@ from jsonfield import JSONField
 from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 from .base import ShopifyResourceModel
 from .collect import Collect
+from django_hint import QueryType
 
 
 class SmartCollection(ShopifyResourceModel):
@@ -28,5 +29,5 @@ class SmartCollection(ShopifyResourceModel):
         app_label = "shopify_sync"
 
     @property
-    def collects(self):
+    def collects(self) -> QueryType[Collect]:
         return Collect.objects.filter(self.user, collection_id=self.id)

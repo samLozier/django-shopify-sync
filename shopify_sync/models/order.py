@@ -13,6 +13,9 @@ from .line_item import LineItem
 from .session import activate_session
 from ..encoders import ShopifyDjangoJSONEncoder, empty_list
 
+from django_hint import QueryType
+from typing import Union
+
 
 class Order(ShopifyDatedResourceModel):
     shopify_resource_class = shopify.resources.Order
@@ -80,16 +83,23 @@ class Order(ShopifyDatedResourceModel):
     class Meta:
         app_label = "shopify_sync"
 
-    def fix_ids(self):
+    def fix_ids(self) -> None:
+        """
+        Corrects for possibly non-matching ID values between an order and variant record.
+        :return:
+        :rtype:
+        """
         for line_item in self.line_items:
             line_item.fix_ids()
 
-    def _line_items(self):
+    def _line_items(self) -> QueryType[LineItem]:
         return LineItem.objects.filter(order=self)
 
     line_items = property(_line_items)
 
-    def calculate_refund(self, line_items=None):
+    def calculate_refund(
+        self, line_items: Union[QueryType[LineItem], list[LineItem], None] = None
+    ) -> Union[dict, ResourceInvalid]:
         URL = "refunds/calculate"
         line_items = line_items if line_items else self.line_items
         refund_lines = []
@@ -145,7 +155,7 @@ class Order(ShopifyDatedResourceModel):
         return body
 
     def refund(self, **kwargs):
-        data = self.calculate_refund(**kwargs)
+        data: dict = self.calculate_refund(**kwargs)
         if isinstance(data, dict):
             return self.refund_from_transaction(data)
         else:
